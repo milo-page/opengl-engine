@@ -3,8 +3,6 @@
 
 int main() {
 
-    std::cout << "hello world again \n";
-
     if (SDL_Init(SDL_INIT_VIDEO)) {
         std::cout << "it worked\n";
     } else {
