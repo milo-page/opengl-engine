@@ -1,22 +1,34 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(OpenGL_test)
+project(opengl_test)
 
-include_directories(
-    ${CMAKE_SOURCE_DIR}/inc
-    ${CMAKE_SOURCE_DIR}/inc/SDL3
-)
-
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
-
 
 add_definitions("-Wall")
 
-file( GLOB SRC_FILES ${PROJECT_SOURCE_DIR}/src/*.cpp)
+# Find SDL3 using find_package
+find_package(SDL3 REQUIRED CONFIG REQUIRED COMPONENTS SDL3-shared)
+find_package(glbinding REQUIRED)
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
+# Include directories from SDL3
+include_directories(
+    ${CMAKE_SOURCE_DIR}/include
+    ${SDL3_INCLUDE_DIRS}
+)
 
-add_executable(test.bin ${SRC_FILES})
+# Source files
+file(GLOB SOURCES "src/*.cpp")
 
-target_link_libraries(test.bin PRIVATE "${CMAKE_SOURCE_DIR}/bin/libSDL3.a" pthread dl m)
+# Add executable
+add_executable(${PROJECT_NAME} ${SOURCES})
+
+# make name main
+set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "main")
+
+# Link against SDL3
+target_link_libraries(
+    ${PROJECT_NAME} PRIVATE
+    SDL3::SDL3
+    glbinding::glbinding    
+)

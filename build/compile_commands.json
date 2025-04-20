@@ -1,7 +1,0 @@
-[
-{
-  "directory": "/home/milo/Programming/C++/opengl-test/build",
-  "command": "/usr/bin/g++ -I/home/milo/Programming/C++/opengl-test/inc -I/home/milo/Programming/C++/opengl-test/inc/SDL3 -g   -Wall -std=gnu++11 -o CMakeFiles/test.bin.dir/src/test.cpp.o -c /home/milo/Programming/C++/opengl-test/src/test.cpp",
-  "file": "/home/milo/Programming/C++/opengl-test/src/test.cpp"
-}
-]

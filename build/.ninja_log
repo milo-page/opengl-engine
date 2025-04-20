@@ -1,10 +1,3 @@
 # ninja log v5
-232	326	1731880926464195816	/home/milo/Programming/C++/opengl-test/bin/test.bin	ddf4981c94e1e346
-1	29	1734681389881622114	build.ninja	ea11266c788fa6fc
-2	232	1731880926372196671	CMakeFiles/test.bin.dir/src/test.cpp.o	1c7e3a4f4823e6f9
-1	3	0	clean	a31eedcededa8236
-1	202	1734681529457836685	CMakeFiles/test.bin.dir/src/test.cpp.o	1c7e3a4f4823e6f9
-202	294	1734681529549836825	/home/milo/Programming/C++/opengl-test/bin/test.bin	ddf4981c94e1e346
-0	3	0	clean	a31eedcededa8236
-1	186	1734681548289865388	CMakeFiles/test.bin.dir/src/test.cpp.o	1c7e3a4f4823e6f9
-186	268	1734681548369865509	/home/milo/Programming/C++/opengl-test/bin/test.bin	ddf4981c94e1e346
+1	1146	1745166356770251638	CMakeFiles/opengl_test.dir/src/main.cpp.o	10b9ebf8f9de78c4
+1147	1218	1745166356842250223	main	e23c6a81e51c7ee9
