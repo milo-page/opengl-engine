@@ -1,14 +1,15 @@
-#include <iostream>
-#include <string>
 #include <SDL3/SDL.h>
 #include <glbinding/gl/gl.h>
 #include <glbinding/Binding.h>
-#include <fstream>
-
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/constants.hpp>
+
+// standard libraries
+#include <iostream>
+#include <string>
+#include <fstream>
 
 using namespace gl;
 
@@ -17,6 +18,7 @@ void framebuffer_size_callback(SDL_Window* window, int width, int height) {
     glViewport(0, 0, width, height);
 }
 
+// shader loading function
 std::string load_shader(const std::string& filename) {
     std::ifstream file("../src/shaders/" + filename);
     if (!file.is_open()) {
@@ -33,6 +35,7 @@ std::string load_shader(const std::string& filename) {
     return shader;
 }
 
+// check if the shader compiled properly
 void check_shader_compilation (uint32_t shader) {
     int  success;
     char info_log[512];
@@ -43,6 +46,8 @@ void check_shader_compilation (uint32_t shader) {
         std::cerr << "ERROR::SHADER::COMPILATION_FAILED\n" << info_log << std::endl;
     }
 }
+
+// check if the shader program linked properly
 void check_program_linking(uint32_t program) {
     int  success;
     char info_log[512];
@@ -68,15 +73,16 @@ int main(int argc, char* argv[]) {
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
     SDL_Window* window = nullptr;
-    int window_width = 1000;
-    int window_height = 1000;
-    const std::string title = "OpenGL Windows Test";
+    uint32_t window_width = 1000;
+    uint32_t window_height = 1000;
+    const std::string title = "OpenGL App";
 
     window = SDL_CreateWindow(
         title.c_str(),
         window_width, window_height,
         SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE //| SDL_WINDOW_FULLSCREEN
     );
+
     if (!window) {
         throw std::runtime_error("Window creation failed: " + std::string(SDL_GetError()));
     }
@@ -87,6 +93,7 @@ int main(int argc, char* argv[]) {
         throw std::runtime_error("OpenGL context creation failed: " + std::string(SDL_GetError()));
     }
 
+    // enable opengl features
     glbinding::Binding::initialize();
 
     std::cout << "OpenGL initialized" << '\n';
@@ -94,73 +101,54 @@ int main(int argc, char* argv[]) {
     std::cout << "Renderer: " << glGetString(GL_RENDERER) << '\n';
     std::cout << "Version: "  << glGetString(GL_VERSION)  << '\n';
 
-    // Enable VSync
-    SDL_GL_SetSwapInterval(1);
-
     SDL_Event event;
     bool running_flag = true;
 
+    // Enable VSync
+    SDL_GL_SetSwapInterval(1);
+    
+    // create the opengl viewport
     glViewport(0, 0, window_width, window_height);
 
-    // vertex shader
+    // load shaders from files
     std::string vertex_shader_code = load_shader("vertex.vert");
+    std::string fragment_shader_code = load_shader("fragment.frag");
     const char* vertex_shader_source = vertex_shader_code.c_str();
-    unsigned int vertex_shader = glCreateShader(GL_VERTEX_SHADER);
+    const char* fragment_shader_source = fragment_shader_code.c_str();
+
+    // vertex shader creation
+    uint32_t vertex_shader = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vertex_shader, 1, &vertex_shader_source, NULL);
     glCompileShader(vertex_shader);
-    // check for shader compile errors
-    int success;
-    char infoLog[512];
-    glGetShaderiv(vertex_shader, GL_COMPILE_STATUS, &success);
-    if (!success)
-    {
-        glGetShaderInfoLog(vertex_shader, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
-    }
-    // fragment shader
-    unsigned int fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
+    check_shader_compilation(vertex_shader);
 
-    std::string fragment_shader_code = load_shader("fragment.frag");
-    const char* fragment_shader_source = fragment_shader_code.c_str();
+    // fragment shader
+    uint32_t fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(fragment_shader, 1, &fragment_shader_source, NULL);
     glCompileShader(fragment_shader);
-    // check for shader compile errors
-    glGetShaderiv(fragment_shader, GL_COMPILE_STATUS, &success);
-    if (!success)
-    {
-        glGetShaderInfoLog(fragment_shader, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
-    }
+    check_shader_compilation(fragment_shader);
+
     // link shaders
-    unsigned int shader_program = glCreateProgram();
+    uint32_t shader_program = glCreateProgram();
     glAttachShader(shader_program, vertex_shader);
     glAttachShader(shader_program, fragment_shader);
     glLinkProgram(shader_program);
-    // check for linking errors
-    glGetProgramiv(shader_program, GL_LINK_STATUS, &success);
-    if (!success) {
-        glGetProgramInfoLog(shader_program, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
-    }
+    check_program_linking(shader_program);
+
+    // delete shaders
     glDeleteShader(vertex_shader);
     glDeleteShader(fragment_shader);
 
-    float one_two = 1 / glm::sqrt(2);
-
     float vertices[] = {
 
-        0.0f, 1.0f, 0.0f,           1.0f, 0.0f, 0.0f,
-        -one_two, 0.0f, one_two,   0.0f, 1.0f, 0.0f,
-        one_two, 0.0f, one_two,    0.0f, 0.0f, 1.0f,
-        one_two, 0.0f, -one_two,   0.0f, 1.0f, 0.0f,
-        -one_two, 0.0f, -one_two,  1.0f, 0.0f, 0.0f,
-        0.0f, -1.0f, 0.0f,          0.0f, 1.0f, 0.0f
+        0.0f, 1.0f, 0.0f,           0.0f, 0.0f, 0.0f,
+        -1.0, 0.0f, 1.0,            0.0f, 0.0f, 0.0f,
+        1.0f, 0.0f, 1.0f,           0.0f, 0.0f, 0.0f,
+        1.0f, 0.0f, -1.0f,          0.0f, 0.0f, 0.0f,
+        -1.0f, 0.0f, -1.0f,         0.0f, 0.0f, 0.0f,
+        0.0f, -1.0f, 0.0f,          0.0f, 0.0f, 0.0f
 
     };
-
-    // glm::vec3 position[] = {
-    //     glm::vec3(0.0f, 0.0f, 0.0f)
-    // };
 
     uint32_t indices[] = {
         0,1,2,
@@ -172,15 +160,16 @@ int main(int argc, char* argv[]) {
         5,2,3,
         5,3,4,
         5,4,1,
-
     };
-    unsigned int VBO, VAO, EBO;
+
+    // create gpu objects
+    uint32_t VBO, VAO, EBO;
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
     glGenBuffers(1, &EBO);
-    // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
     glBindVertexArray(VAO);
-
+    
+    // bind them
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
@@ -194,45 +183,31 @@ int main(int argc, char* argv[]) {
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3* sizeof(float)));
     glEnableVertexAttribArray(1);
 
-    // glBindBuffer(GL_ARRAY_BUFFER, 0); 
-
-    // glBindVertexArray(0); 
-
+    // set wireframe mode first
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     // matrix shit
 
+    // translation matrix
     glm::mat4 trans = glm::mat4(1.0f);
-    trans = glm::rotate(trans, glm::half_pi<float>() / 2, glm::vec3(0.0, 0.0, 1.0));
-    trans = glm::scale(trans, glm::vec3(0.5, 0.5, 0.5)); 
-
-
-    // glm::mat4 ortho = glm::ortho(0.0f, 800.0f, 0.0f, 600.0f, 0.1f, 100.0f);
-    // glm::mat4 proj = glm::perspective(glm::half_pi<float>() / 2, (float)window_width/(float)window_height, 0.1f, 100.0f);
-
-    // // model matrix
-    // glm::mat4 model = glm::mat4(1.0f);
-    // model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f)); 
-
-    // glm::mat4 view = glm::mat4(1.0f);
-    // view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
-
+    // trans = glm::rotate(trans, glm::half_pi<float>() / 2, glm::vec3(0.0, 0.0, 1.0));
+    // trans = glm::scale(trans, glm::vec3(0.5, 0.5, 0.5));
 
     glUseProgram(shader_program);
 
     double last_time = SDL_GetTicks() / 1000.0;
     int frame_count = 0;
     double fps = 0.0;
-    std::string original_title = "OpenGL Test";
 
     float rotation_speed = 1;
-
     int mesh = 0;
 
     while (running_flag) {
+        // clear the screen
         glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
-
+        
+        // fps and clock stuff
         double current_time = SDL_GetTicks() / 1000.0;
         frame_count++;
         double delta_time = current_time - last_time;
@@ -241,13 +216,14 @@ int main(int argc, char* argv[]) {
         {
             fps = double(frame_count) / delta_time;
 
-            std::string title = original_title + " - FPS: " + std::to_string((int)round(fps));
-            SDL_SetWindowTitle(window, title.c_str());
+            std::string new_title = title + " - FPS: " + std::to_string((int)round(fps));
+            SDL_SetWindowTitle(window, new_title.c_str());
 
             frame_count = 0;
             last_time = current_time;
         }
 
+        // events
         while (SDL_PollEvent(&event)) {
             switch (event.type) {
                 case SDL_EVENT_QUIT:
@@ -271,10 +247,10 @@ int main(int argc, char* argv[]) {
                 case SDL_EVENT_WINDOW_RESIZED:
                     framebuffer_size_callback(window, event.window.data1, event.window.data2);
                     break;
+                default:
+                    break;
             }
         }
-        
-        // --------- rendering ----------
 
         switch (mesh) {
             case 0:
@@ -288,30 +264,23 @@ int main(int argc, char* argv[]) {
                 break;
             default:
                 break;
-
         }
 
-        glm::mat4 trans = glm::mat4(1.0f);
-        //trans = glm::rotate(trans, 1.0f, glm::vec3(0.0f, 1.0f, 0.0f));
-        trans = glm::rotate(trans, glm::half_pi<float>() / 5, glm::vec3(1.0f, 0.0f, 0.0f));
-        trans = glm::translate(trans, glm::vec3(static_cast<float>(glm::sin(current_time)) / 2, static_cast<float>(glm::cos(3*current_time)) / 2,0.0f));
-        trans = glm::rotate(trans, rotation_speed*(float)current_time, glm::vec3(1.0f, 0.2f, 0.0f));
+        trans = glm::mat4(1.0f);
+        trans = glm::rotate(trans, rotation_speed*(float)current_time, glm::vec3(0.0f, 1.0f, 0.0f));
+        trans = glm::rotate(trans, glm::half_pi<float>() / 4, glm::vec3(1.0f, 0.0f, 0.0f));
 
+        uint32_t transform_location = glGetUniformLocation(shader_program, "transform");
+        glUniformMatrix4fv(transform_location, 1, GL_FALSE, glm::value_ptr(trans));
 
-        // int modelLoc = glGetUniformLocation(shader_program, "model");
-        // glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+        float positive_sin = (glm::sin(current_time) / 2.0f) + 0.5f;
+        float positive_cos = (glm::cos(current_time) / 2.0f) + 0.5f;
 
-
-        uint32_t transformLoc = glGetUniformLocation(shader_program, "transform");
-        glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
-
-
-        float green_value = (glm::sin(current_time) / 2.0f) + 0.5f;
         int vertex_colour_location = glGetUniformLocation(shader_program, "colour_multiplier");
-        glUniform4f(vertex_colour_location, 1 - green_value, green_value, (glm::cos(current_time) / 2.0f) + 0.5f, 1.0f);
+        glUniform3f(vertex_colour_location, positive_sin / 2.0f, positive_cos / 2.0f, (positive_cos + positive_sin) / 4.0f);
         
         glBindVertexArray(VAO);
-        glDrawElements(GL_TRIANGLES, sizeof(vertices) / sizeof(float), GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(uint32_t), GL_UNSIGNED_INT, 0);
         SDL_GL_SwapWindow(window);
     }
 

@@ -5,7 +5,7 @@ project(opengl_test)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-add_definitions("-Wall")
+# add_definitions("-Wall")
 
 # Find SDL3 using find_package
 find_package(SDL3 REQUIRED CONFIG REQUIRED COMPONENTS SDL3-shared)
