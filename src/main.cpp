@@ -4,11 +4,13 @@
 #include <glbinding/gl/gl.h>
 #include <glbinding/Binding.h>
 #include <fstream>
+#include <sstream>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/constants.hpp>
+
 
 using namespace gl;
 
@@ -43,6 +45,7 @@ void check_shader_compilation (uint32_t shader) {
         std::cerr << "ERROR::SHADER::COMPILATION_FAILED\n" << info_log << std::endl;
     }
 }
+
 void check_program_linking(uint32_t program) {
     int  success;
     char info_log[512];
@@ -96,6 +99,7 @@ int main(int argc, char* argv[]) {
 
     // Enable VSync
     SDL_GL_SetSwapInterval(1);
+    glEnable(GL_DEPTH_TEST);
 
     SDL_Event event;
     bool running_flag = true;
@@ -174,6 +178,11 @@ int main(int argc, char* argv[]) {
         5,4,1,
 
     };
+
+    glm::vec3 cubePosition = {
+        0.0f, 0.0f, 0.0f
+    };
+
     unsigned int VBO, VAO, EBO;
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
@@ -220,6 +229,7 @@ int main(int argc, char* argv[]) {
 
     glUseProgram(shader_program);
 
+
     double last_time = SDL_GetTicks() / 1000.0;
     int frame_count = 0;
     double fps = 0.0;
@@ -229,9 +239,10 @@ int main(int argc, char* argv[]) {
 
     int mesh = 0;
 
+
     while (running_flag) {
         glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         double current_time = SDL_GetTicks() / 1000.0;
         frame_count++;
@@ -298,10 +309,6 @@ int main(int argc, char* argv[]) {
         trans = glm::rotate(trans, rotation_speed*(float)current_time, glm::vec3(1.0f, 0.2f, 0.0f));
 
 
-        // int modelLoc = glGetUniformLocation(shader_program, "model");
-        // glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-
-
         uint32_t transformLoc = glGetUniformLocation(shader_program, "transform");
         glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
 
@@ -309,7 +316,9 @@ int main(int argc, char* argv[]) {
         float green_value = (glm::sin(current_time) / 2.0f) + 0.5f;
         int vertex_colour_location = glGetUniformLocation(shader_program, "colour_multiplier");
         glUniform4f(vertex_colour_location, 1 - green_value, green_value, (glm::cos(current_time) / 2.0f) + 0.5f, 1.0f);
-        
+
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+    
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, sizeof(vertices) / sizeof(float), GL_UNSIGNED_INT, 0);
         SDL_GL_SwapWindow(window);
