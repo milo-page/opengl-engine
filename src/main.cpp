@@ -126,8 +126,8 @@ int main(int argc, char* argv[]) {
 
     // window creation
     SDL_Window* window = nullptr;
-    uint32_t window_width = 960;
-    uint32_t window_height = 540;
+    int window_width = 1000;
+    int window_height = 1000;
     const std::string title = "OpenGL App";
 
     window = SDL_CreateWindow(
@@ -289,7 +289,7 @@ int main(int argc, char* argv[]) {
     glm::vec3 camera_right = glm::normalize(glm::cross(camera_front, camera_up));
 
     // starting variables
-    int move_direction[] = {0,0,0};
+    glm::vec3 input_direction = glm::vec3(0.0f, 0.0f, 0.0f);
     const float camera_speed = 5.0f;
     const float sensitivity = 0.05;
     float pitch = 0.0f;
@@ -305,7 +305,7 @@ int main(int argc, char* argv[]) {
     double current_time;
     int mesh = 0;
 
-    float gravity = 9.81;
+    const glm::vec3 gravity = glm::vec3(0.0f, -0.01, 0.0f);
     float velocity = 0;
     double delta_time = 0.0f;
     bool flying = false;
@@ -316,12 +316,18 @@ int main(int argc, char* argv[]) {
     float aspect_ratio = static_cast<float>(window_width / window_height);
     GLenum current_mode;
 
-    Player player = Player(glm::vec3(-2.0f, 2.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, -9.81f));
+    // uint32_t width = window_width;
+    // int height = window_height;
+
+    // objects
+    Player player = Player(glm::vec3(-10.0f, 2.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f));
     Camera player_camera = Camera(player.get_position(), 0.05f, aspect_ratio);
 
+    // capture mouse
     SDL_SetWindowRelativeMouseMode(window, true);
 
     while (running_flag) {
+
         // clear the screen
         glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -353,11 +359,17 @@ int main(int argc, char* argv[]) {
                     break;
 
                 case SDL_EVENT_WINDOW_RESIZED:
-                    static int width = event.window.data1;
-                    static int height = event.window.data2;
-                    framebuffer_size_callback(window, width, height);
-                    aspect_ratio = static_cast<float>(width / height);
+                    window_width = event.window.data1;
+                    window_height = event.window.data2;
+                    aspect_ratio = static_cast<float>(window_width) / static_cast<float>(window_height);
+                    // framebuffer_size_callback(window, window_width, window_height);
+                    std::cout << aspect_ratio << '\n';
                     break;
+                case SDL_EVENT_WINDOW_ENTER_FULLSCREEN || SDL_EVENT_WINDOW_LEAVE_FULLSCREEN:
+                    SDL_GetWindowSizeInPixels(window, &window_width, &window_height);
+                    aspect_ratio = static_cast<float>(window_width) / static_cast<float>(window_height);
+                    framebuffer_size_callback(window, window_width, window_height);
+                    std::cout << aspect_ratio << '\n';
                 case SDL_EVENT_MOUSE_MOTION:
                     mouse_delta_x = event.motion.xrel;
                     mouse_delta_y = event.motion.yrel;
@@ -380,95 +392,130 @@ int main(int argc, char* argv[]) {
             default:
                 break;
         }
+
         player_camera.process_mouse_movement(delta_time, mouse_delta_x, mouse_delta_y);
-        // x_offset = mouse_x_rel * sensitivity;
-        // y_offset = -mouse_y_rel * sensitivity;
 
-        // yaw += x_offset;
-        // pitch += y_offset;
-
-        // if(pitch > 89.0f) pitch = 89.0f;
-        // if(pitch < -89.0f) pitch = -89.0f;
-
-        // camera_front.x = glm::cos(glm::radians(yaw)) * glm::cos(glm::radians(pitch));
-        // camera_front.y = glm::sin(glm::radians(pitch));
-        // camera_front.z = glm::sin(glm::radians(yaw)) * glm::cos(glm::radians(pitch));
-        // camera_front = glm::normalize(camera_front);
-
-        move_direction[0] = 0;
-        move_direction[1] = 0;
-        move_direction[2] = 0;
-        sprinting = false;
-        if (keyboard_state[SDL_SCANCODE_W]) move_direction[0] += 1;
-        if (keyboard_state[SDL_SCANCODE_S]) move_direction[0] -= 1;
-        if (keyboard_state[SDL_SCANCODE_D]) move_direction[1] += 1;
-        if (keyboard_state[SDL_SCANCODE_A]) move_direction[1] -= 1;
-        if (keyboard_state[SDL_SCANCODE_LSHIFT] && keyboard_state[SDL_SCANCODE_W]) sprinting = true;
-
-        // camera stuff in rendering
-        // glm::vec3 camera_right = glm::normalize(glm::cross(camera_front, glm::vec3(0.0f, 1.0f, 0.0f)));
-        // glm::vec3 camera_up = glm::cross(camera_front, camera_right);
-        glm::vec3 world_up = glm::vec3(0.0f, 1.0f, 0.0f);
-
-        glm::vec3 camera_front = player_camera.get_forward();
+        glm::vec3 camera_forward = player_camera.get_forward();
         glm::vec3 camera_right = player_camera.get_right();
         glm::vec3 camera_up = player_camera.get_up();
 
-        if (flying) {
-            glm::vec3 camera_up = glm::normalize(glm::cross(camera_right, camera_front));
-            if (sprinting) {
-                if (keyboard_state[SDL_SCANCODE_SPACE]) camera_position += camera_speed * sprint_factor * flying_speed_factor * camera_up * static_cast<float>(delta_time);
-                if (keyboard_state[SDL_SCANCODE_LCTRL]) camera_position -= camera_speed * sprint_factor* flying_speed_factor * camera_up * static_cast<float>(delta_time);
-                camera_position += move_direction[0] * camera_speed * sprint_factor * flying_speed_factor * camera_front * static_cast<float>(delta_time);
-                camera_position += move_direction[1] * camera_speed * sprint_factor * flying_speed_factor * camera_right * static_cast<float>(delta_time);
-            } else {
-                if (keyboard_state[SDL_SCANCODE_SPACE]) camera_position += camera_speed * flying_speed_factor * camera_up * static_cast<float>(delta_time);
-                if (keyboard_state[SDL_SCANCODE_LCTRL]) camera_position -= camera_speed * flying_speed_factor * camera_up * static_cast<float>(delta_time);
-                camera_position += move_direction[0] * camera_speed * flying_speed_factor * camera_front * static_cast<float>(delta_time);
-                camera_position += move_direction[1] * camera_speed * flying_speed_factor * camera_right * static_cast<float>(delta_time);
+        glm::vec3 input_direction = glm::vec3(0.0f);
+
+        keyboard_state = SDL_GetKeyboardState(NULL);
+
+        // Use camera vectors for movement direction
+        // Ensure camera_forward/right are projected onto the horizontal plane if needed
+        // For simplicity, assuming they are already suitable for horizontal movement control
+        glm::vec3 forward = glm::normalize(glm::vec3(camera_forward.x, 0.0f, camera_forward.z));
+        glm::vec3 right = glm::normalize(glm::vec3(camera_right.x, 0.0f, camera_right.z));
+
+
+        if (keyboard_state[SDL_SCANCODE_W]) input_direction -= forward; // Move "forward" relative to camera
+        if (keyboard_state[SDL_SCANCODE_S]) input_direction += forward; // Move "backward"
+        if (keyboard_state[SDL_SCANCODE_D]) input_direction += right;   // Move "right"
+        if (keyboard_state[SDL_SCANCODE_A]) input_direction -= right;   // Move "left"
+
+        // Normalize the input direction vector if there was input
+        float input_mag_sq = glm::sqrt(input_direction.length());
+        if (input_mag_sq > 0.0001f) {
+            input_direction = glm::normalize(input_direction);
+
+            // Check for sprinting ONLY if moving forward (or based on your preference)
+            if (keyboard_state[SDL_SCANCODE_W] && keyboard_state[SDL_SCANCODE_LSHIFT]) {
+                player.set_sprinting(true);;
             }
-
-
-        } else {
-
-            glm::vec3 camera_front_xz = camera_front;
-            camera_front_xz.y = 0.0f;
-
-            if (glm::length(camera_front_xz) > 0.001f) {
-                camera_front_xz = glm::normalize(camera_front_xz);
-            } else {
-                camera_front_xz = glm::vec3(0.0f);
-            }
-
-            bool on_ground = (camera_position.y <= (floor + 1.0f) && (camera_position.x <= 30.0f && camera_position.x >= -30.0f) && (camera_position.z <= 30.0f && camera_position.z >= -30.0f));
-            if (on_ground) {
-                if (sprinting) {
-                    camera_position += move_direction[0] * camera_speed * sprint_factor * camera_front_xz * static_cast<float>(delta_time);
-                    camera_position += move_direction[1] * camera_speed * 0.5f * sprint_factor * camera_right * static_cast<float>(delta_time);
-
-                } else {
-                    camera_position += move_direction[0] * camera_speed * camera_front_xz * static_cast<float>(delta_time);
-                    camera_position += move_direction[1] * camera_speed * camera_right * static_cast<float>(delta_time);
-                }
-                
-                velocity = 0.0f;
-                camera_position.y = floor + 1.0f;
-                if (keyboard_state[SDL_SCANCODE_SPACE]) {
-                    velocity = 5.0f;
-                }
-            } else {
-                if (sprinting) {
-                    camera_position += move_direction[0] * camera_speed * sprint_factor * camera_front_xz * static_cast<float>(delta_time);
-                    camera_position += move_direction[1] * camera_speed * air_speed_factor_factor * camera_right * static_cast<float>(delta_time);
-                } else {
-                    camera_position += move_direction[0] * camera_speed * camera_front_xz * static_cast<float>(delta_time);
-                    camera_position += move_direction[1] * camera_speed * air_speed_factor_factor * camera_right * static_cast<float>(delta_time);
-                }
-                velocity -= gravity * static_cast<float>(delta_time);
-            }
-            
-            camera_position.y += velocity * static_cast<float>(delta_time);
         }
+
+        // --- Physics Update ---
+        // Pass the normalized input direction, sprint status, GLOBAL gravity, and delta time
+        // player.update_physics(input_direction, gravity, delta_time);
+
+
+        // --- Camera Update ---
+        // Update camera based on NEW player position
+        // player_camera.set_position(player.get_position() + glm::vec3(0.0f, 1.0f, 0.0f)); // Example offset
+        
+        glm::vec3 pos = player.get_position();
+
+        // std::cout << pos.x << ", " << pos.y << ", " << pos.z << std::endl;
+        // Update camera orientation if needed
+        // player_camera.update(delta_time);
+
+        // player.set_sprinting(false);
+        // input_direction = glm::vec3(0.0f, 0.0f, 0.0f);
+
+        // if (keyboard_state[SDL_SCANCODE_W]) input_direction -= camera_forward;
+        // if (keyboard_state[SDL_SCANCODE_S]) input_direction += camera_forward;
+        // if (keyboard_state[SDL_SCANCODE_D]) input_direction += camera_right;
+        // if (keyboard_state[SDL_SCANCODE_A]) input_direction -= camera_right;
+        // if (keyboard_state[SDL_SCANCODE_LSHIFT] && keyboard_state[SDL_SCANCODE_W]) player.set_sprinting(true);
+
+        // input_direction += gravity;
+        // if (input_direction.length() <= 0.01f) {
+        //     input_direction = glm::normalize(input_direction);
+        // }
+
+        // player.set_acceleration(input_direction);
+        // player.update_physics(delta_time);
+        // player_camera.set_position(player.get_position());
+
+        // if (player.get_flying()) {
+        //     if (player.get_sprinting()) {
+        //         player.update_physics(delta_time)
+
+
+        //         if (keyboard_state[SDL_SCANCODE_SPACE]) camera_position += camera_speed * sprint_factor * flying_speed_factor * camera_up * static_cast<float>(delta_time);
+        //         if (keyboard_state[SDL_SCANCODE_LCTRL]) camera_position -= camera_speed * sprint_factor* flying_speed_factor * camera_up * static_cast<float>(delta_time);
+        //         camera_position += input_direction[0] * camera_speed * sprint_factor * flying_speed_factor * camera_front * static_cast<float>(delta_time);
+        //         camera_position += input_direction[1] * camera_speed * sprint_factor * flying_speed_factor * camera_right * static_cast<float>(delta_time);
+        //     } else {
+        //         if (keyboard_state[SDL_SCANCODE_SPACE]) camera_position += camera_speed * flying_speed_factor * camera_up * static_cast<float>(delta_time);
+        //         if (keyboard_state[SDL_SCANCODE_LCTRL]) camera_position -= camera_speed * flying_speed_factor * camera_up * static_cast<float>(delta_time);
+        //         camera_position += input_direction[0] * camera_speed * flying_speed_factor * camera_front * static_cast<float>(delta_time);
+        //         camera_position += input_direction[1] * camera_speed * flying_speed_factor * camera_right * static_cast<float>(delta_time);
+        //     }
+
+
+        // } else {
+
+        //     glm::vec3 camera_front_xz = camera_front;
+        //     camera_front_xz.y = 0.0f;
+
+        //     if (glm::length(camera_front_xz) > 0.001f) {
+        //         camera_front_xz = glm::normalize(camera_front_xz);
+        //     } else {
+        //         camera_front_xz = glm::vec3(0.0f);
+        //     }
+
+        //     bool on_ground = (camera_position.y <= (floor + 1.0f) && (camera_position.x <= 30.0f && camera_position.x >= -30.0f) && (camera_position.z <= 30.0f && camera_position.z >= -30.0f));
+        //     if (on_ground) {
+        //         if (sprinting) {
+        //             camera_position += input_direction[0] * camera_speed * sprint_factor * camera_front_xz * static_cast<float>(delta_time);
+        //             camera_position += input_direction[1] * camera_speed * 0.5f * sprint_factor * camera_right * static_cast<float>(delta_time);
+
+        //         } else {
+        //             camera_position += input_direction[0] * camera_speed * camera_front_xz * static_cast<float>(delta_time);
+        //             camera_position += input_direction[1] * camera_speed * camera_right * static_cast<float>(delta_time);
+        //         }
+                
+        //         velocity = 0.0f;
+        //         camera_position.y = floor + 1.0f;
+        //         if (keyboard_state[SDL_SCANCODE_SPACE]) {
+        //             velocity = 5.0f;
+        //         }
+        //     } else {
+        //         if (sprinting) {
+        //             camera_position += input_direction[0] * camera_speed * sprint_factor * camera_front_xz * static_cast<float>(delta_time);
+        //             camera_position += input_direction[1] * camera_speed * air_speed_factor_factor * camera_right * static_cast<float>(delta_time);
+        //         } else {
+        //             camera_position += input_direction[0] * camera_speed * camera_front_xz * static_cast<float>(delta_time);
+        //             camera_position += input_direction[1] * camera_speed * air_speed_factor_factor * camera_right * static_cast<float>(delta_time);
+        //         }
+        //         velocity -= gravity * static_cast<float>(delta_time);
+        //     }
+            
+        //     camera_position.y += velocity * static_cast<float>(delta_time);
+        // }
 
         glm::mat4 view = player_camera.get_view_matrix();
         glm::mat4 projection = player_camera.get_projection_matrix();

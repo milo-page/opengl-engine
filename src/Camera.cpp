@@ -4,7 +4,7 @@ Camera::Camera(glm::vec3 initial_position, float sensitivity, float aspect_ratio
     position(initial_position),
     world_up(0.0f, 1.0f, 0.0f),
     yaw(0.0f),
-    pitch(-90.0f),
+    pitch(0.0f),
     sensitivity(sensitivity),
     fov(45.0f),
     far_plane(100.0f),
