@@ -285,7 +285,7 @@ int main(int argc, char* argv[]) {
     // starting variables
     int move_direction[] = {0,0,0};
     const float camera_speed = 0.05f;
-    const float sensitivity = 0.1;
+    const float sensitivity = 0.2;
     float pitch = 0.0f;
     float yaw = -90.0f;
     float x_offset = 0;
@@ -310,6 +310,10 @@ int main(int argc, char* argv[]) {
         clock.display_fps_title(&window, &title);
         current_time = clock.get_time();
 
+        // mouse stuff 
+        mouse_x_rel = 0;
+        mouse_y_rel = 0;
+
         // events
         while (SDL_PollEvent(&event)) {
             switch (event.type) {
@@ -320,18 +324,17 @@ int main(int argc, char* argv[]) {
                     if (event.key.key == SDLK_ESCAPE) {
                         running_flag = false;
                     } else if (event.key.key == SDLK_M) {
-                        if (mesh != 2) {
-                            mesh++;
-                        } else {
-                            mesh = 0;
-                        }
+                        mesh = (mesh + 1) % 3;
                     }
                     break;
 
                 case SDL_EVENT_WINDOW_RESIZED:
                     framebuffer_size_callback(window, event.window.data1, event.window.data2);
                     break;
-                    
+                case SDL_EVENT_MOUSE_MOTION:
+                    mouse_x_rel = event.motion.xrel;
+                    mouse_y_rel = event.motion.yrel;
+                    break;
                 default:
                     break;
             }
@@ -350,6 +353,19 @@ int main(int argc, char* argv[]) {
             default:
                 break;
         }
+        x_offset = mouse_x_rel * sensitivity;
+        y_offset = -mouse_y_rel * sensitivity;
+
+        yaw += x_offset;
+        pitch += y_offset;
+
+        if(pitch > 89.0f) pitch = 89.0f;
+        if(pitch < -89.0f) pitch = -89.0f;
+
+        camera_front.x = glm::cos(glm::radians(yaw)) * glm::cos(glm::radians(pitch));
+        camera_front.y = glm::sin(glm::radians(pitch));
+        camera_front.z = glm::sin(glm::radians(yaw)) * glm::cos(glm::radians(pitch));
+        camera_front = glm::normalize(camera_front);
 
         move_direction[0] = 0;
         move_direction[1] = 0;
@@ -360,27 +376,6 @@ int main(int argc, char* argv[]) {
         if (keyboard_state[SDL_SCANCODE_A]) move_direction[1] -= 1;
         if (keyboard_state[SDL_SCANCODE_SPACE]) move_direction[2] -= 1;
         if (keyboard_state[SDL_SCANCODE_LCTRL]) move_direction[2] += 1;
-
-        mouse_x_rel = 0;
-        mouse_y_rel = 0;
-
-        SDL_GetRelativeMouseState(&mouse_x_rel, &mouse_y_rel);
-
-        x_offset = mouse_x_rel * sensitivity;
-        y_offset = -mouse_y_rel * sensitivity;
-
-        yaw += x_offset;
-        pitch += y_offset;
-
-        if(pitch > 89.0f) pitch = 89.0f;
-        if(pitch < -89.0f) pitch = -89.0f;
-
-        std::cout << "yaw: " << yaw << " | pitch: " << pitch << std::endl;
-
-        camera_front.x = glm::cos(glm::radians(yaw)) * glm::cos(glm::radians(pitch));
-        camera_front.y = glm::sin(glm::radians(pitch));
-        camera_front.z = glm::sin(glm::radians(yaw)) * glm::cos(glm::radians(pitch));
-        camera_front = glm::normalize(camera_front);
 
         // camera stuff in rendering
         glm::vec3 camera_right = glm::normalize(glm::cross(camera_front, glm::vec3(0.0f, 1.0f, 0.0f)));
