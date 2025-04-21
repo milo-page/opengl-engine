@@ -1,3 +1,0 @@
-/home/milo/Programming/C++/opengl-test/build/CMakeFiles/opengl_test.dir
-/home/milo/Programming/C++/opengl-test/build/CMakeFiles/edit_cache.dir
-/home/milo/Programming/C++/opengl-test/build/CMakeFiles/rebuild_cache.dir
