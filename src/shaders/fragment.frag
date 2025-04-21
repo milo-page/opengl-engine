@@ -6,5 +6,5 @@ uniform vec3 colour_multiplier;
 
 void main()
 {
-    frag_colour = vec4(colour_multiplier + colour, 1.0);
+    frag_colour = vec4(colour_multiplier + colour + vec3(0.1,0.1,0.1), 1.0);
 }
