@@ -1,45 +1,37 @@
-// class Clock {
-//     public:
-//         Clock() {
-//             last_time = SDL_GetTicks() / 1000.0;
-//         }
+#include <clock.hpp>
 
-//         void update_time() {
-//             current_time = SDL_GetTicks() / 1000.0;
-//             frame_count++;
-//             delta_time = current_time - last_time;
-//             last_time = current_time;
-//         }
+Clock::Clock() {
+    last_time = SDL_GetTicks() / 1000.0;
+}
 
-//         void display_fps_title(SDL_Window** window, const std::string* title) {
+void Clock::update_time() {
+    current_time = SDL_GetTicks() / 1000.0;
+    frame_count++;
+    delta_time = current_time - last_time;
+    last_time = current_time;
+    if (current_time - last_update_time >= 0.5f) {
+        fps = static_cast<double>(frame_count) / (current_time - last_update_time);
+    }
+}
 
-//             if (current_time - last_update_time >= 0.5f) {
-                
-//                 fps = double(frame_count) / (current_time - last_update_time);
-            
-//                 std::string new_title = *title + " - FPS: " + std::to_string(static_cast<int>(round(fps)));
-//                 SDL_SetWindowTitle(*window, new_title.c_str());
+void Clock::display_fps_title(SDL_Window** window, const std::string* title) {
+
+    if (current_time - last_update_time >= 0.5f) {
     
-//                 frame_count = 0;
-//                 last_update_time = current_time;
-//             }
-//         }
-        
-//         double get_fps() {
-//             fps = static_cast<double>(frame_count) / delta_time;
-//             return fps;
-//         }
-//         double get_time() {
-//             return current_time;
-//         }
-//         double get_delta_time() {
-//             return delta_time;
-//         }
-//     private:
-//         double last_time = 0;
-//         double current_time = 0;
-//         double delta_time = 0;
-//         uint32_t frame_count = 0;
-//         double fps = 0.0;
-//         double last_update_time = 0.0;
-// };
+        std::string new_title = *title + " - FPS: " + std::to_string(static_cast<int>(SDL_round(fps)));
+        SDL_SetWindowTitle(*window, new_title.c_str());
+
+        frame_count = 0;
+        last_update_time = current_time;
+    }
+}
+
+double Clock::get_fps() const {
+    return fps;
+}
+double Clock::get_time() const {
+    return current_time;
+}
+double Clock::get_delta_time() const {
+    return delta_time;
+}
