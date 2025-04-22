@@ -16,8 +16,8 @@ void Camera::process_mouse_movement(const float delta_time, float delta_x, float
     delta_x *= sensitivity;
     delta_y *= -sensitivity;
 
-    yaw += delta_x;
-    pitch += delta_y;
+    yaw += delta_x * delta_time;
+    pitch += delta_y * delta_time;
 
     if (pitch > 89.0f) {
         pitch = 89.0f;
@@ -73,6 +73,10 @@ float Camera::get_fov() const {
 void Camera::set_fov(float fov) {
     this->fov = fov;
 };
+
+void Camera::set_aspect_ratio(float aspect_ratio) {
+    this->aspect_ratio = aspect_ratio;
+}
 
 glm::mat4 Camera::get_view_matrix() const {
     return view;

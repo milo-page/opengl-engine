@@ -14,8 +14,13 @@
 // custom
 #include <Player.hpp>
 #include <Camera.hpp>
+#include <Util.hpp>
 
 using namespace gl;
+
+// void display_vector(glm::vec3 vec) {
+//     std::cout << vec.x << ", " << vec.y << ", " << vec.z << std::endl;
+// }
 
 class Clock {
     public:
@@ -315,13 +320,11 @@ int main(int argc, char* argv[]) {
     bool sprinting = false;
     float aspect_ratio = static_cast<float>(window_width / window_height);
     GLenum current_mode;
-
-    // uint32_t width = window_width;
-    // int height = window_height;
+    bool window_transition = false;
 
     // objects
     Player player = Player(glm::vec3(-10.0f, 2.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f));
-    Camera player_camera = Camera(player.get_position(), 0.05f, aspect_ratio);
+    Camera player_camera = Camera(player.get_position(), 10.0f, aspect_ratio);
 
     // capture mouse
     SDL_SetWindowRelativeMouseMode(window, true);
@@ -362,14 +365,11 @@ int main(int argc, char* argv[]) {
                     window_width = event.window.data1;
                     window_height = event.window.data2;
                     aspect_ratio = static_cast<float>(window_width) / static_cast<float>(window_height);
-                    // framebuffer_size_callback(window, window_width, window_height);
-                    std::cout << aspect_ratio << '\n';
-                    break;
-                case SDL_EVENT_WINDOW_ENTER_FULLSCREEN || SDL_EVENT_WINDOW_LEAVE_FULLSCREEN:
-                    SDL_GetWindowSizeInPixels(window, &window_width, &window_height);
-                    aspect_ratio = static_cast<float>(window_width) / static_cast<float>(window_height);
                     framebuffer_size_callback(window, window_width, window_height);
-                    std::cout << aspect_ratio << '\n';
+                    player_camera.set_aspect_ratio(aspect_ratio);
+                    window_transition = true;
+                    break;
+
                 case SDL_EVENT_MOUSE_MOTION:
                     mouse_delta_x = event.motion.xrel;
                     mouse_delta_y = event.motion.yrel;
@@ -392,8 +392,11 @@ int main(int argc, char* argv[]) {
             default:
                 break;
         }
-
-        player_camera.process_mouse_movement(delta_time, mouse_delta_x, mouse_delta_y);
+        if (!window_transition) {
+            player_camera.process_mouse_movement(delta_time, mouse_delta_x, mouse_delta_y);
+        } else {
+            window_transition = false;
+        }
 
         glm::vec3 camera_forward = player_camera.get_forward();
         glm::vec3 camera_right = player_camera.get_right();
@@ -401,39 +404,35 @@ int main(int argc, char* argv[]) {
 
         glm::vec3 input_direction = glm::vec3(0.0f);
 
-        keyboard_state = SDL_GetKeyboardState(NULL);
+        keyboard_state = SDL_GetKeyboardState(nullptr);
 
-        // Use camera vectors for movement direction
-        // Ensure camera_forward/right are projected onto the horizontal plane if needed
-        // For simplicity, assuming they are already suitable for horizontal movement control
         glm::vec3 forward = glm::normalize(glm::vec3(camera_forward.x, 0.0f, camera_forward.z));
         glm::vec3 right = glm::normalize(glm::vec3(camera_right.x, 0.0f, camera_right.z));
 
-
-        if (keyboard_state[SDL_SCANCODE_W]) input_direction -= forward; // Move "forward" relative to camera
-        if (keyboard_state[SDL_SCANCODE_S]) input_direction += forward; // Move "backward"
-        if (keyboard_state[SDL_SCANCODE_D]) input_direction += right;   // Move "right"
-        if (keyboard_state[SDL_SCANCODE_A]) input_direction -= right;   // Move "left"
+        if (keyboard_state[SDL_SCANCODE_W]) input_direction += forward;
+        if (keyboard_state[SDL_SCANCODE_S]) input_direction -= forward;
+        if (keyboard_state[SDL_SCANCODE_D]) input_direction += right;
+        if (keyboard_state[SDL_SCANCODE_A]) input_direction -= right;
 
         // Normalize the input direction vector if there was input
-        float input_mag_sq = glm::sqrt(input_direction.length());
-        if (input_mag_sq > 0.0001f) {
+        float input_direction_length = glm::sqrt(glm::pow(input_direction.x, 2) + glm::pow(input_direction.y, 2) + glm::pow(input_direction.z, 2));
+        if (input_direction_length > 0.0001f) {
             input_direction = glm::normalize(input_direction);
 
             // Check for sprinting ONLY if moving forward (or based on your preference)
             if (keyboard_state[SDL_SCANCODE_W] && keyboard_state[SDL_SCANCODE_LSHIFT]) {
-                player.set_sprinting(true);;
+                player.set_sprinting(true);
             }
         }
-
+        // display_vector(input_direction);
         // --- Physics Update ---
         // Pass the normalized input direction, sprint status, GLOBAL gravity, and delta time
-        // player.update_physics(input_direction, gravity, delta_time);
+        player.update_physics(input_direction, gravity, delta_time);
 
 
         // --- Camera Update ---
         // Update camera based on NEW player position
-        // player_camera.set_position(player.get_position() + glm::vec3(0.0f, 1.0f, 0.0f)); // Example offset
+        player_camera.set_position(player.get_position() + glm::vec3(0.0f, 1.0f, 0.0f)); // Example offset
         
         glm::vec3 pos = player.get_position();
 

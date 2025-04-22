@@ -3,6 +3,8 @@
 #include <glm/glm.hpp>
 #include <glm/vec3.hpp>
 
+#include <Util.hpp>
+
 class Player {
     public:
         Player(
@@ -29,6 +31,7 @@ class Player {
         float air_control_factor = 0.1f;
         bool flying;
         bool sprinting;
+        bool grounded;
 
         void limit_horizontal_speed(float max_speed);
 };

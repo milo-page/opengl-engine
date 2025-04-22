@@ -14,6 +14,7 @@ class Camera {
         glm::vec3 get_right() const;
         float get_fov() const;
         void set_fov(float fov);
+        void set_aspect_ratio(float aspect_ratio);
         glm::mat4 get_view_matrix() const;
         glm::mat4 get_projection_matrix() const;
 
