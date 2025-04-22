@@ -1,4 +1,4 @@
-#include <Camera.hpp>
+#include <camera.hpp>
 
 Camera::Camera(glm::vec3 initial_position, float sensitivity, float aspect_ratio) :
     position(initial_position),

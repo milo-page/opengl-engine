@@ -12,15 +12,11 @@
 #include <fstream>
 
 // custom
-#include <Player.hpp>
-#include <Camera.hpp>
-#include <Util.hpp>
+#include <player.hpp>
+#include <camera.hpp>
+#include <utils.hpp>
 
 using namespace gl;
-
-// void display_vector(glm::vec3 vec) {
-//     std::cout << vec.x << ", " << vec.y << ", " << vec.z << std::endl;
-// }
 
 class Clock {
     public:
@@ -260,9 +256,6 @@ int main(int argc, char* argv[]) {
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3* sizeof(float)));
     glEnableVertexAttribArray(1);
 
-    // glUseProgram(shader_program);
-
-
     // floor stuff
     // create gpu objects
     uint32_t floor_VBO, floor_VAO, floor_EBO;
@@ -310,7 +303,7 @@ int main(int argc, char* argv[]) {
     double current_time;
     int mesh = 0;
 
-    const glm::vec3 gravity = glm::vec3(0.0f, -0.01, 0.0f);
+    const glm::vec3 gravity = glm::vec3(0.0f, -9.81f, 0.0f);
     float velocity = 0;
     double delta_time = 0.0f;
     bool flying = false;
@@ -357,7 +350,9 @@ int main(int argc, char* argv[]) {
                     } else if (event.key.key == SDLK_M) {
                         mesh = (mesh + 1) % 3;
                     } else if (event.key.key == SDLK_F) {
-                        flying = !flying;
+                        player.set_flying(!player.is_flying());
+                    } else if (event.key.key == SDLK_SPACE) {
+                        player.jump();
                     }
                     break;
 
@@ -436,7 +431,7 @@ int main(int argc, char* argv[]) {
         
         glm::vec3 pos = player.get_position();
 
-        // std::cout << pos.x << ", " << pos.y << ", " << pos.z << std::endl;
+        display_vector(pos);
         // Update camera orientation if needed
         // player_camera.update(delta_time);
 

@@ -1,9 +1,6 @@
 #pragma once
 
-#include <glm/glm.hpp>
-#include <glm/vec3.hpp>
-
-#include <Util.hpp>
+#include <utils.hpp>
 
 class Player {
     public:
@@ -20,15 +17,17 @@ class Player {
         void set_velocity(const glm::vec3& velocity);
         void set_flying(bool flying);
         void set_sprinting(bool sprinting);
+        void jump();
 
     private:
         glm::vec3 position;
         glm::vec3 velocity;
         float move_speed;
         float sprint_speed;
-        float acceleration_force = 50.0f;
-        float friction_coefficient = 10.0f;
+        float acceleration_force = 10.0f;
+        float friction_coefficient = 200.0f;
         float air_control_factor = 0.1f;
+        float jump_strength = 1000.0f;
         bool flying;
         bool sprinting;
         bool grounded;
