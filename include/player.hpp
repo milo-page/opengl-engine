@@ -18,19 +18,27 @@ class Player {
         void set_flying(bool flying);
         void set_sprinting(bool sprinting);
         void jump();
+        void display_state();
 
     private:
+        // vectors
         glm::vec3 position;
         glm::vec3 velocity;
-        float move_speed;
-        float sprint_speed;
-        float acceleration_force = 10.0f;
-        float friction_coefficient = 200.0f;
-        float air_control_factor = 0.1f;
-        float jump_strength = 1000.0f;
+
+        // movement
+        float move_speed                = 10.0f;
+        float sprint_speed              = 20.0f;
+        float flying_speed              = 15.0f;
+        float jump_strength             = 5.0f;
+        float ground_acceleration       = 20.0f;
+        float air_acceleration          = 10.0f;
+        float flying_acceleration       = 40.0f;
+        float ground_damping            = 30.0f;
+        float air_damping               = 1.0f;
+        float flying_damping            = 5.0f;
+
+        // state
         bool flying;
         bool sprinting;
         bool grounded;
-
-        void limit_horizontal_speed(float max_speed);
 };

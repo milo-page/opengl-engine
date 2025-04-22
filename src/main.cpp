@@ -280,44 +280,22 @@ int main(int argc, char* argv[]) {
 
     glUseProgram(shader_program);
 
-    // camera stuff
-    glm::vec3 camera_position = glm::vec3(-2.0f, 2.0f, 0.0f);
-    glm::vec3 camera_front = glm::vec3(0.0f, 0.0f, -1.0f);
-    glm::vec3 camera_up = glm::vec3(0.0f, 1.0f, 0.0f);
-    glm::vec3 camera_right = glm::normalize(glm::cross(camera_front, camera_up));
-
-    // starting variables
-    glm::vec3 input_direction = glm::vec3(0.0f, 0.0f, 0.0f);
-    const float camera_speed = 5.0f;
-    const float sensitivity = 0.05;
-    float pitch = 0.0f;
-    float yaw = 0.0f;
-    float x_offset = 0;
-    float y_offset = 0;
-    float mouse_delta_x = 0;
-    float mouse_delta_y = 0;
-    int num_keys;
-    float fov = 90;
-    const bool* keyboard_state = SDL_GetKeyboardState(&num_keys);
+    const bool* keyboard_state = SDL_GetKeyboardState(nullptr);
     Clock clock = Clock();
     double current_time;
     int mesh = 0;
 
     const glm::vec3 gravity = glm::vec3(0.0f, -9.81f, 0.0f);
-    float velocity = 0;
     double delta_time = 0.0f;
-    bool flying = false;
-    float flying_speed_factor = 3.0f;
-    float air_speed_factor_factor = 0.6f;
-    float sprint_factor = 1.8f;
-    bool sprinting = false;
     float aspect_ratio = static_cast<float>(window_width / window_height);
     GLenum current_mode;
     bool window_transition = false;
+    int mouse_delta_x = 0;
+    int mouse_delta_y = 0;
 
     // objects
     Player player = Player(glm::vec3(-10.0f, 2.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f));
-    Camera player_camera = Camera(player.get_position(), 10.0f, aspect_ratio);
+    Camera player_camera = Camera(player.get_position(), 0.05f, aspect_ratio);
 
     // capture mouse
     SDL_SetWindowRelativeMouseMode(window, true);
@@ -344,6 +322,7 @@ int main(int argc, char* argv[]) {
                 case SDL_EVENT_QUIT:
                     running_flag = false;
                     break;
+
                 case SDL_EVENT_KEY_DOWN:
                     if (event.key.key == SDLK_ESCAPE) {
                         running_flag = false;
@@ -369,6 +348,7 @@ int main(int argc, char* argv[]) {
                     mouse_delta_x = event.motion.xrel;
                     mouse_delta_y = event.motion.yrel;
                     break;
+
                 default:
                     break;
             }
@@ -395,11 +375,10 @@ int main(int argc, char* argv[]) {
 
         glm::vec3 camera_forward = player_camera.get_forward();
         glm::vec3 camera_right = player_camera.get_right();
-        glm::vec3 camera_up = player_camera.get_up();
-
-        glm::vec3 input_direction = glm::vec3(0.0f);
+        glm::vec3 camera_world_up = player_camera.get_world_up();
 
         keyboard_state = SDL_GetKeyboardState(nullptr);
+        glm::vec3 input_direction = glm::vec3(0.0f);
 
         glm::vec3 forward = glm::normalize(glm::vec3(camera_forward.x, 0.0f, camera_forward.z));
         glm::vec3 right = glm::normalize(glm::vec3(camera_right.x, 0.0f, camera_right.z));
@@ -408,111 +387,26 @@ int main(int argc, char* argv[]) {
         if (keyboard_state[SDL_SCANCODE_S]) input_direction -= forward;
         if (keyboard_state[SDL_SCANCODE_D]) input_direction += right;
         if (keyboard_state[SDL_SCANCODE_A]) input_direction -= right;
+        if (player.is_flying()) {
+            if (keyboard_state[SDL_SCANCODE_SPACE]) input_direction += camera_world_up;
+            if (keyboard_state[SDL_SCANCODE_LCTRL]) input_direction -= camera_world_up;
+        }
 
-        // Normalize the input direction vector if there was input
-        float input_direction_length = glm::sqrt(glm::pow(input_direction.x, 2) + glm::pow(input_direction.y, 2) + glm::pow(input_direction.z, 2));
-        if (input_direction_length > 0.0001f) {
+        player.set_sprinting(false);
+
+        if (glm::length2(input_direction) > constants::epsilon_squared) {
             input_direction = glm::normalize(input_direction);
 
-            // Check for sprinting ONLY if moving forward (or based on your preference)
             if (keyboard_state[SDL_SCANCODE_W] && keyboard_state[SDL_SCANCODE_LSHIFT]) {
                 player.set_sprinting(true);
             }
         }
-        // display_vector(input_direction);
-        // --- Physics Update ---
-        // Pass the normalized input direction, sprint status, GLOBAL gravity, and delta time
+
+        // update player and camera
         player.update_physics(input_direction, gravity, delta_time);
+        player_camera.set_position(player.get_position() + glm::vec3(0.0f, 1.0f, 0.0f));
 
-
-        // --- Camera Update ---
-        // Update camera based on NEW player position
-        player_camera.set_position(player.get_position() + glm::vec3(0.0f, 1.0f, 0.0f)); // Example offset
-        
-        glm::vec3 pos = player.get_position();
-
-        display_vector(pos);
-        // Update camera orientation if needed
-        // player_camera.update(delta_time);
-
-        // player.set_sprinting(false);
-        // input_direction = glm::vec3(0.0f, 0.0f, 0.0f);
-
-        // if (keyboard_state[SDL_SCANCODE_W]) input_direction -= camera_forward;
-        // if (keyboard_state[SDL_SCANCODE_S]) input_direction += camera_forward;
-        // if (keyboard_state[SDL_SCANCODE_D]) input_direction += camera_right;
-        // if (keyboard_state[SDL_SCANCODE_A]) input_direction -= camera_right;
-        // if (keyboard_state[SDL_SCANCODE_LSHIFT] && keyboard_state[SDL_SCANCODE_W]) player.set_sprinting(true);
-
-        // input_direction += gravity;
-        // if (input_direction.length() <= 0.01f) {
-        //     input_direction = glm::normalize(input_direction);
-        // }
-
-        // player.set_acceleration(input_direction);
-        // player.update_physics(delta_time);
-        // player_camera.set_position(player.get_position());
-
-        // if (player.get_flying()) {
-        //     if (player.get_sprinting()) {
-        //         player.update_physics(delta_time)
-
-
-        //         if (keyboard_state[SDL_SCANCODE_SPACE]) camera_position += camera_speed * sprint_factor * flying_speed_factor * camera_up * static_cast<float>(delta_time);
-        //         if (keyboard_state[SDL_SCANCODE_LCTRL]) camera_position -= camera_speed * sprint_factor* flying_speed_factor * camera_up * static_cast<float>(delta_time);
-        //         camera_position += input_direction[0] * camera_speed * sprint_factor * flying_speed_factor * camera_front * static_cast<float>(delta_time);
-        //         camera_position += input_direction[1] * camera_speed * sprint_factor * flying_speed_factor * camera_right * static_cast<float>(delta_time);
-        //     } else {
-        //         if (keyboard_state[SDL_SCANCODE_SPACE]) camera_position += camera_speed * flying_speed_factor * camera_up * static_cast<float>(delta_time);
-        //         if (keyboard_state[SDL_SCANCODE_LCTRL]) camera_position -= camera_speed * flying_speed_factor * camera_up * static_cast<float>(delta_time);
-        //         camera_position += input_direction[0] * camera_speed * flying_speed_factor * camera_front * static_cast<float>(delta_time);
-        //         camera_position += input_direction[1] * camera_speed * flying_speed_factor * camera_right * static_cast<float>(delta_time);
-        //     }
-
-
-        // } else {
-
-        //     glm::vec3 camera_front_xz = camera_front;
-        //     camera_front_xz.y = 0.0f;
-
-        //     if (glm::length(camera_front_xz) > 0.001f) {
-        //         camera_front_xz = glm::normalize(camera_front_xz);
-        //     } else {
-        //         camera_front_xz = glm::vec3(0.0f);
-        //     }
-
-        //     bool on_ground = (camera_position.y <= (floor + 1.0f) && (camera_position.x <= 30.0f && camera_position.x >= -30.0f) && (camera_position.z <= 30.0f && camera_position.z >= -30.0f));
-        //     if (on_ground) {
-        //         if (sprinting) {
-        //             camera_position += input_direction[0] * camera_speed * sprint_factor * camera_front_xz * static_cast<float>(delta_time);
-        //             camera_position += input_direction[1] * camera_speed * 0.5f * sprint_factor * camera_right * static_cast<float>(delta_time);
-
-        //         } else {
-        //             camera_position += input_direction[0] * camera_speed * camera_front_xz * static_cast<float>(delta_time);
-        //             camera_position += input_direction[1] * camera_speed * camera_right * static_cast<float>(delta_time);
-        //         }
-                
-        //         velocity = 0.0f;
-        //         camera_position.y = floor + 1.0f;
-        //         if (keyboard_state[SDL_SCANCODE_SPACE]) {
-        //             velocity = 5.0f;
-        //         }
-        //     } else {
-        //         if (sprinting) {
-        //             camera_position += input_direction[0] * camera_speed * sprint_factor * camera_front_xz * static_cast<float>(delta_time);
-        //             camera_position += input_direction[1] * camera_speed * air_speed_factor_factor * camera_right * static_cast<float>(delta_time);
-        //         } else {
-        //             camera_position += input_direction[0] * camera_speed * camera_front_xz * static_cast<float>(delta_time);
-        //             camera_position += input_direction[1] * camera_speed * air_speed_factor_factor * camera_right * static_cast<float>(delta_time);
-        //         }
-        //         velocity -= gravity * static_cast<float>(delta_time);
-        //     }
-            
-        //     camera_position.y += velocity * static_cast<float>(delta_time);
-        // }
-
-        glm::mat4 view = player_camera.get_view_matrix();
-        glm::mat4 projection = player_camera.get_projection_matrix();
+        // update model at some point
         glm::mat4 model = glm::mat4(1.0f);
 
         // passing model matrix to uniform in shaders
@@ -521,14 +415,15 @@ int main(int argc, char* argv[]) {
         
         // same for view
         uint32_t view_uniform_location = glGetUniformLocation(shader_program, "view");
-        glUniformMatrix4fv(view_uniform_location, 1, GL_FALSE, glm::value_ptr(view));
+        glUniformMatrix4fv(view_uniform_location, 1, GL_FALSE, glm::value_ptr(player_camera.get_view_matrix()));
 
         // same for projection
         uint32_t projection_uniform_location = glGetUniformLocation(shader_program, "projection");
-        glUniformMatrix4fv(projection_uniform_location, 1, GL_FALSE, glm::value_ptr(projection));
+        glUniformMatrix4fv(projection_uniform_location, 1, GL_FALSE, glm::value_ptr(player_camera.get_projection_matrix()));
 
+        // changing colour a bit
         int vertex_colour_location = glGetUniformLocation(shader_program, "colour_multiplier");
-        glUniform3f(vertex_colour_location, 0.5, 0.5, 0.5);
+        glUniform3f(vertex_colour_location, 0.5, glm::sin(current_time) / 2 + 0.5f, 0.5);
 
         // rendering diamond
         glBindVertexArray(VAO);

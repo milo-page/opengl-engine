@@ -16,8 +16,8 @@ void Camera::process_mouse_movement(const float delta_time, float delta_x, float
     delta_x *= sensitivity;
     delta_y *= -sensitivity;
 
-    yaw += delta_x * delta_time;
-    pitch += delta_y * delta_time;
+    yaw += delta_x;
+    pitch += delta_y;
 
     if (pitch > 89.0f) {
         pitch = 89.0f;
@@ -65,6 +65,10 @@ glm::vec3 Camera::get_up() const {
 glm::vec3 Camera::get_right() const {
     return right;
 };
+
+glm::vec3 Camera::get_world_up() const {
+    return world_up;
+}
 
 float Camera::get_fov() const {
     return fov;

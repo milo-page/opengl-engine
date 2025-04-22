@@ -5,13 +5,14 @@
 
 class Camera {
     public:
-        Camera(glm::vec3 initial_position = glm::vec3(-1.0f, -1.0f, 0.0f), float sensitivity = 0.1f, float aspect_ratio = 1.77778);
+        Camera(glm::vec3 initial_position = glm::vec3(-1.0f, -1.0f, 0.0f), float sensitivity = 0.05f, float aspect_ratio = 1.77778);
         void process_mouse_movement(const float delta_time, float delta_x, float delta_y);
         void set_position(glm::vec3 position);
         glm::vec3 get_position() const;
         glm::vec3 get_forward() const;
         glm::vec3 get_up() const;
         glm::vec3 get_right() const;
+        glm::vec3 get_world_up() const;
         float get_fov() const;
         void set_fov(float fov);
         void set_aspect_ratio(float aspect_ratio);
