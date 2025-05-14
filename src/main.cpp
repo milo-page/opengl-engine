@@ -16,53 +16,13 @@
 #include <camera.hpp>
 #include <clock.hpp>
 #include <utils.hpp>
+#include <shader.hpp>
 
 using namespace gl;
 
 // set the callback so that it will resize
 void framebuffer_size_callback(SDL_Window* window, int width, int height) {
     glViewport(0, 0, width, height);
-}
-
-// shader loading function
-std::string load_shader(const std::string& filename) {
-    std::ifstream file("../src/shaders/" + filename);
-    if (!file.is_open()) {
-        std::cerr << "Could not open shader file: " << filename << std::endl;
-        return "";
-    }
-
-    std::string shader;
-    std::string line;
-    while (std::getline(file, line)) {
-        shader += line + '\n';
-    }
-
-    return shader;
-}
-
-// check if the shader compiled properly
-void check_shader_compilation (uint32_t shader) {
-    int  success;
-    char info_log[512];
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-
-    if (!success) {
-        glGetShaderInfoLog(shader, 512, NULL, info_log);
-        std::cerr << "ERROR::SHADER::COMPILATION_FAILED\n" << info_log << std::endl;
-    }
-}
-
-// check if the shader program linked properly
-void check_program_linking(uint32_t program) {
-    int  success;
-    char info_log[512];
-
-    glGetProgramiv(program, GL_LINK_STATUS, &success);
-    if(!success) {
-        glGetProgramInfoLog(program, 512, NULL, info_log);
-        std::cerr << "ERROR::PROGRAM::LINKING_FAILED\n" << info_log << std::endl;
-    }
 }
 
 int main(int argc, char* argv[]) {
@@ -121,35 +81,6 @@ int main(int argc, char* argv[]) {
 
     // depth testin
     glEnable(GL_DEPTH_TEST);
-
-    // load shaders from files
-    std::string vertex_shader_code = load_shader("vertex.vert");
-    std::string fragment_shader_code = load_shader("fragment.frag");
-    const char* vertex_shader_source = vertex_shader_code.c_str();
-    const char* fragment_shader_source = fragment_shader_code.c_str();
-
-    // vertex shader creation
-    uint32_t vertex_shader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertex_shader, 1, &vertex_shader_source, NULL);
-    glCompileShader(vertex_shader);
-    check_shader_compilation(vertex_shader);
-
-    // fragment shader
-    uint32_t fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragment_shader, 1, &fragment_shader_source, NULL);
-    glCompileShader(fragment_shader);
-    check_shader_compilation(fragment_shader);
-
-    // link shaders
-    uint32_t shader_program = glCreateProgram();
-    glAttachShader(shader_program, vertex_shader);
-    glAttachShader(shader_program, fragment_shader);
-    glLinkProgram(shader_program);
-    check_program_linking(shader_program);
-
-    // delete shaders
-    glDeleteShader(vertex_shader);
-    glDeleteShader(fragment_shader);
 
     // diamond in center of screen
     float vertices[] = {
@@ -233,7 +164,7 @@ int main(int argc, char* argv[]) {
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3* sizeof(float)));
     glEnableVertexAttribArray(1);
 
-    glUseProgram(shader_program);
+    // glUseProgram(shader_program);
 
     const bool* keyboard_state = SDL_GetKeyboardState(nullptr);
     Clock clock = Clock();
@@ -250,10 +181,14 @@ int main(int argc, char* argv[]) {
 
     // objects
     Player player = Player(glm::vec3(-10.0f, 2.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f));
-    Camera player_camera = Camera(player.get_position(), 0.05f, aspect_ratio);
+    Camera player_camera = Camera(player.get_position(), 0.10f, aspect_ratio);
+    Shader shader = Shader("vertex.vert", "fragment.frag");
 
     // capture mouse
     SDL_SetWindowRelativeMouseMode(window, true);
+
+    // use shader program
+    shader.use();
 
     while (running_flag) {
 
@@ -365,19 +300,19 @@ int main(int argc, char* argv[]) {
         glm::mat4 model = glm::mat4(1.0f);
 
         // passing model matrix to uniform in shaders
-        uint32_t model_uniform_location = glGetUniformLocation(shader_program, "model");
+        uint32_t model_uniform_location = glGetUniformLocation(shader.id, "model");
         glUniformMatrix4fv(model_uniform_location, 1, GL_FALSE, glm::value_ptr(model));
         
         // same for view
-        uint32_t view_uniform_location = glGetUniformLocation(shader_program, "view");
+        uint32_t view_uniform_location = glGetUniformLocation(shader.id, "view");
         glUniformMatrix4fv(view_uniform_location, 1, GL_FALSE, glm::value_ptr(player_camera.get_view_matrix()));
 
         // same for projection
-        uint32_t projection_uniform_location = glGetUniformLocation(shader_program, "projection");
+        uint32_t projection_uniform_location = glGetUniformLocation(shader.id, "projection");
         glUniformMatrix4fv(projection_uniform_location, 1, GL_FALSE, glm::value_ptr(player_camera.get_projection_matrix()));
 
         // changing colour a bit
-        int vertex_colour_location = glGetUniformLocation(shader_program, "colour_multiplier");
+        int vertex_colour_location = glGetUniformLocation(shader.id, "colour_multiplier");
         glUniform3f(vertex_colour_location, 0.5, glm::sin(current_time) / 2 + 0.5f, 0.5);
 
         // rendering diamond
@@ -404,7 +339,6 @@ int main(int argc, char* argv[]) {
     glDeleteVertexArrays(1, &floor_VAO);
     glDeleteBuffers(1, &floor_VBO);
     glDeleteBuffers(1, &floor_EBO);
-    glDeleteProgram(shader_program);
 
     if (gl_context) SDL_GL_DestroyContext(gl_context);
     SDL_Quit();

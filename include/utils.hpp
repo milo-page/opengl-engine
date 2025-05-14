@@ -2,6 +2,8 @@
 
 #define GLM_ENABLE_EXPERIMENTAL
 
+#include <glbinding/gl/gl.h>
+#include <glbinding/Binding.h>
 #include <glm/glm.hpp>
 #include <glm/vec3.hpp>
 #include <glm/gtx/norm.hpp>
