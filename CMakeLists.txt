@@ -10,6 +10,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 # Find SDL3 using find_package
 find_package(SDL3 REQUIRED CONFIG REQUIRED COMPONENTS SDL3-shared)
 find_package(glbinding REQUIRED)
+find_package(assimp REQUIRED)
 
 # Include directories from SDL3
 include_directories(
@@ -30,5 +31,6 @@ set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "main")
 target_link_libraries(
     ${PROJECT_NAME} PRIVATE
     SDL3::SDL3
-    glbinding::glbinding    
+    glbinding::glbinding
+    assimp::assimp
 )

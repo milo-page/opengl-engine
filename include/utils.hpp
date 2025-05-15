@@ -7,6 +7,7 @@
 #include <glm/glm.hpp>
 #include <glm/vec3.hpp>
 #include <glm/gtx/norm.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <iostream>
 
 namespace constants {

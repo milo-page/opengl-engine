@@ -38,6 +38,18 @@ void Shader::use() {
     gl::glUseProgram(id);
 }
 
+void Shader::setMat4(const std::string& name, const glm::mat4& value) const {
+    int loc = gl::glGetUniformLocation(id, name.c_str());
+    if (loc == -1) {
+        std::cerr << "Warning: uniform '" << name
+                  << "' doesn't exist or is not used.\n";
+        return;
+    }
+    
+    gl::glUniformMatrix4fv(loc, 1, gl::GL_FALSE,
+                           glm::value_ptr(value));
+}
+
 std::string Shader::load_shader_source(const std::string& filename) {
     std::ifstream file("../src/shaders/" + filename);
     if (!file.is_open()) {

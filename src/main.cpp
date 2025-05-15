@@ -7,6 +7,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/constants.hpp>
 
+
 // standard libraries
 #include <iostream>
 #include <string>
@@ -18,7 +19,7 @@
 #include <clock.hpp>
 #include <utils.hpp>
 #include <shader.hpp>
-#include <mesh.hpp>
+#include <model.hpp>
 
 using namespace gl;
 
@@ -184,6 +185,8 @@ int main(int argc, char* argv[]) {
     Camera player_camera(player.get_position(), 0.10f, aspect_ratio);
     Shader shader("vertex.vert", "fragment.frag");
 
+    Model shape("../models/shape_2.obj");
+
     // capture mouse
     SDL_SetWindowRelativeMouseMode(window, true);
 
@@ -299,34 +302,43 @@ int main(int argc, char* argv[]) {
         // update model at some point
         glm::mat4 model = glm::mat4(1.0f);
 
-        // passing model matrix to uniform in shaders
-        uint32_t model_uniform_location = glGetUniformLocation(shader.id, "model");
-        glUniformMatrix4fv(model_uniform_location, 1, GL_FALSE, glm::value_ptr(model));
+
+        // // passing model matrix to uniform in shaders
+        // uint32_t model_uniform_location = glGetUniformLocation(shader.id, "model");
+        // glUniformMatrix4fv(model_uniform_location, 1, GL_FALSE, glm::value_ptr(model));
         
-        // same for view
-        uint32_t view_uniform_location = glGetUniformLocation(shader.id, "view");
-        glUniformMatrix4fv(view_uniform_location, 1, GL_FALSE, glm::value_ptr(player_camera.get_view_matrix()));
+        // // same for view
+        // uint32_t view_uniform_location = glGetUniformLocation(shader.id, "view");
+        // glUniformMatrix4fv(view_uniform_location, 1, GL_FALSE, glm::value_ptr(player_camera.get_view_matrix()));
 
-        // same for projection
-        uint32_t projection_uniform_location = glGetUniformLocation(shader.id, "projection");
-        glUniformMatrix4fv(projection_uniform_location, 1, GL_FALSE, glm::value_ptr(player_camera.get_projection_matrix()));
+        // // same for projection
+        // uint32_t projection_uniform_location = glGetUniformLocation(shader.id, "projection");
+        // glUniformMatrix4fv(projection_uniform_location, 1, GL_FALSE, glm::value_ptr(player_camera.get_projection_matrix()));
 
-        // changing colour a bit
-        int vertex_colour_location = glGetUniformLocation(shader.id, "colour_multiplier");
-        glUniform3f(vertex_colour_location, 0.5, glm::sin(current_time) / 2 + 0.5f, 0.5);
+        // // changing colour a bit
+        // int vertex_colour_location = glGetUniformLocation(shader.id, "colour_multiplier");
+        // glUniform3f(vertex_colour_location, 0.5, glm::sin(current_time) / 2 + 0.5f, 0.5);
+
+        // rendering blender thing
+        shader.use();
+        shader.setMat4("model",  model);
+        shader.setMat4("view",   player_camera.get_view_matrix());
+        shader.setMat4("projection",   player_camera.get_projection_matrix());
+
+        shape.draw(shader);
 
         // rendering diamond
-        glBindVertexArray(VAO);
-        glPolygonMode(GL_FRONT_AND_BACK, current_mode);
-        glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(uint32_t), GL_UNSIGNED_INT, 0);
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        glUniform3f(vertex_colour_location, 0.0f, 0.0f, 0.0f);
-        glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(uint32_t), GL_UNSIGNED_INT, 0);
+        // glBindVertexArray(VAO);
+        // glPolygonMode(GL_FRONT_AND_BACK, current_mode);
+        // glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(uint32_t), GL_UNSIGNED_INT, 0);
+        // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        // glUniform3f(vertex_colour_location, 0.0f, 0.0f, 0.0f);
+        // glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(uint32_t), GL_UNSIGNED_INT, 0);
 
-        // rendering floor
-        glPolygonMode(GL_FRONT_AND_BACK, current_mode);
-        glBindVertexArray(floor_VAO);
-        glDrawElements(GL_TRIANGLES, sizeof(floor_indices) / sizeof(uint32_t), GL_UNSIGNED_INT, 0);
+        // // rendering floor
+        // glPolygonMode(GL_FRONT_AND_BACK, current_mode);
+        // glBindVertexArray(floor_VAO);
+        // glDrawElements(GL_TRIANGLES, sizeof(floor_indices) / sizeof(uint32_t), GL_UNSIGNED_INT, 0);
 
         SDL_GL_SwapWindow(window);
     }

@@ -14,8 +14,7 @@ class Shader {
         ~Shader();
 
         void use();
-
-        void set_bool();
+        void setMat4(const std::string& name, const glm::mat4& value) const;
 
     private:
         std::string load_shader_source(const std::string& filename);
