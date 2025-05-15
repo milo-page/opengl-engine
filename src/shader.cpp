@@ -1,10 +1,10 @@
 #include <shader.hpp>
 
 Shader::Shader(const std::string vertex_filename, const std::string fragment_filename) {
-    std::string vertex_shader_code = load_shader(vertex_filename);
-    std::string fragment_shader_code = load_shader(fragment_filename);
-    const char* vertex_shader_source = vertex_shader_code.c_str();
-    const char* fragment_shader_source = fragment_shader_code.c_str();
+    std::string vertex_shader_source_str = load_shader_source(vertex_filename);
+    std::string fragment_shader_source_str = load_shader_source(fragment_filename);
+    const char* vertex_shader_source = vertex_shader_source_str.c_str();
+    const char* fragment_shader_source = fragment_shader_source_str.c_str();
 
     // vertex shader
     uint32_t vertex_shader = gl::glCreateShader(gl::GL_VERTEX_SHADER);
@@ -38,20 +38,17 @@ void Shader::use() {
     gl::glUseProgram(id);
 }
 
-std::string Shader::load_shader(const std::string& filename) {
+std::string Shader::load_shader_source(const std::string& filename) {
     std::ifstream file("../src/shaders/" + filename);
     if (!file.is_open()) {
         std::cerr << "Could not open shader file: " << filename << std::endl;
         return "";
     }
 
-    std::string shader;
-    std::string line;
-    while (std::getline(file, line)) {
-        shader += line + '\n';
-    }
+    std::ostringstream ss;
+    ss << file.rdbuf();
 
-    return shader;
+    return ss.str();
 }
 
 void Shader::check_compile_errors(uint32_t shader, std::string type) {

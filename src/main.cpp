@@ -1,3 +1,4 @@
+// external libraries
 #include <SDL3/SDL.h>
 #include <glbinding/gl/gl.h>
 #include <glbinding/Binding.h>
@@ -17,6 +18,7 @@
 #include <clock.hpp>
 #include <utils.hpp>
 #include <shader.hpp>
+#include <mesh.hpp>
 
 using namespace gl;
 
@@ -164,8 +166,6 @@ int main(int argc, char* argv[]) {
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3* sizeof(float)));
     glEnableVertexAttribArray(1);
 
-    // glUseProgram(shader_program);
-
     const bool* keyboard_state = SDL_GetKeyboardState(nullptr);
     Clock clock = Clock();
     double current_time;
@@ -180,9 +180,9 @@ int main(int argc, char* argv[]) {
     int mouse_delta_y = 0;
 
     // objects
-    Player player = Player(glm::vec3(-10.0f, 2.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f));
-    Camera player_camera = Camera(player.get_position(), 0.10f, aspect_ratio);
-    Shader shader = Shader("vertex.vert", "fragment.frag");
+    Player player(glm::vec3(-10.0f, 2.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+    Camera player_camera(player.get_position(), 0.10f, aspect_ratio);
+    Shader shader("vertex.vert", "fragment.frag");
 
     // capture mouse
     SDL_SetWindowRelativeMouseMode(window, true);

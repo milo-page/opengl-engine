@@ -4,8 +4,7 @@
 
 #include <string>
 #include <fstream>
-// #include <sstream>
-#include <iostream>
+#include <sstream>
 
 class Shader {
     public:
@@ -19,7 +18,7 @@ class Shader {
         void set_bool();
 
     private:
-        std::string load_shader(const std::string& filename);
+        std::string load_shader_source(const std::string& filename);
         void check_compile_errors(uint32_t shader, std::string type);
 
 };
