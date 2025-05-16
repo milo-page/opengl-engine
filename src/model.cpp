@@ -25,6 +25,7 @@ Mesh::~Mesh() {
 
 void Mesh::draw(Shader &shader) {
     gl::glBindVertexArray(VAO);
+    gl::glPolygonMode(gl::GL_FRONT_AND_BACK, gl::GL_FILL);
     gl::glDrawElements(gl::GL_TRIANGLES, indices.size(), gl::GL_UNSIGNED_INT, 0);
     gl::glBindVertexArray(0);
 }
@@ -49,10 +50,10 @@ void Mesh::setup_mesh() {
     gl::glVertexAttribPointer(0, 3, gl::GL_FLOAT, gl::GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, position));
 
     gl::glEnableVertexAttribArray(1);
-    gl::glVertexAttribPointer(1, 3, gl::GL_FLOAT, gl::GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, colour));
+    gl::glVertexAttribPointer(1, 3, gl::GL_FLOAT, gl::GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
 
     gl::glEnableVertexAttribArray(2);
-    gl::glVertexAttribPointer(2, 3, gl::GL_FLOAT, gl::GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
+    gl::glVertexAttribPointer(2, 3, gl::GL_FLOAT, gl::GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, colour));
 
    // clean up
    gl::glBindVertexArray(0);
@@ -65,13 +66,21 @@ Model::Model(const std::string &path) {
 }
 
 void Model::draw(Shader &shader) {
-    for(unsigned int i = 0; i < meshes.size(); i++)
+    for (uint32_t i = 0; i < meshes.size(); i++) {
+        // std::cout << i << '\n';
         meshes[i].draw(shader);
+    }
 }
 
 void Model::load_model(const std::string &path) {
     Assimp::Importer import;
-    const aiScene *scene = import.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);	
+    const aiScene* scene = import.ReadFile(
+        path,
+        aiProcess_Triangulate |
+        aiProcess_JoinIdenticalVertices |
+        aiProcess_GenNormals |
+        aiProcess_FlipUVs
+    );
 	
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
         std::cerr << "ERROR::ASSIMP::" << import.GetErrorString() << std::endl;
@@ -85,7 +94,7 @@ void Model::process_node(aiNode *node, const aiScene *scene)
 {
     for (uint32_t i = 0; i < node->mNumMeshes; i++) {
         aiMesh* mesh = scene->mMeshes[node->mMeshes[i]]; 
-        meshes.push_back(process_mesh(mesh, scene));			
+        meshes.push_back(process_mesh(mesh, scene));
     }
 
     for (uint32_t i = 0; i < node->mNumChildren; i++) {
@@ -93,12 +102,12 @@ void Model::process_node(aiNode *node, const aiScene *scene)
     }
 }
 
-Mesh Model::process_mesh(aiMesh *mesh, const aiScene *scene)
-{
+Mesh Model::process_mesh(aiMesh *mesh, const aiScene *scene) {
+
     std::vector<Vertex> vertices;
     std::vector<unsigned int> indices;
 
-    glm::vec4 mesh_colour = glm::vec4(0.5f, 0.5f, 0.5f, 1.0f);
+    glm::vec3 mesh_colour = glm::vec3(0.5f, 0.5f, 0.5f);
 
     bool has_vertex_colours = mesh->HasVertexColors(0);
 
@@ -106,7 +115,7 @@ Mesh Model::process_mesh(aiMesh *mesh, const aiScene *scene)
         aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
         aiColor4D diffuse_colour;
         if (AI_SUCCESS == material->Get(AI_MATKEY_COLOR_DIFFUSE, diffuse_colour)) {
-            mesh_colour = glm::vec4(diffuse_colour.r, diffuse_colour.g, diffuse_colour.b, diffuse_colour.a);
+            mesh_colour = glm::vec3(diffuse_colour.r, diffuse_colour.g, diffuse_colour.b);
         }
     }
 
@@ -133,7 +142,6 @@ Mesh Model::process_mesh(aiMesh *mesh, const aiScene *scene)
             vertex.colour.r = mesh->mColors[0][i].r;
             vertex.colour.g = mesh->mColors[0][i].g;
             vertex.colour.b = mesh->mColors[0][i].b;
-            vertex.colour.a = mesh->mColors[0][i].a;
         } else {
             vertex.colour = mesh_colour;
         }
@@ -147,6 +155,13 @@ Mesh Model::process_mesh(aiMesh *mesh, const aiScene *scene)
             indices.push_back(face.mIndices[j]);
         }     
     }
+
+    // for (auto b : vertices) {
+    //     std::cout << b.position.x << ',' << b.position.y << ',' << b.position.z << '\n';
+    // }
+    // for (auto l : indices) {
+    //     std::cout << l << '\n';
+    // }
 
     return Mesh(vertices, indices); 
 }

@@ -39,15 +39,13 @@ void Shader::use() {
 }
 
 void Shader::setMat4(const std::string& name, const glm::mat4& value) const {
-    int loc = gl::glGetUniformLocation(id, name.c_str());
-    if (loc == -1) {
-        std::cerr << "Warning: uniform '" << name
-                  << "' doesn't exist or is not used.\n";
+    gl::GLint uniform_location = gl::glGetUniformLocation(id, name.c_str());
+    if (uniform_location == -1) {
+        std::cerr << "Warning: uniform '" << name << "' doesn't exist or is not used." << std::endl;
         return;
     }
     
-    gl::glUniformMatrix4fv(loc, 1, gl::GL_FALSE,
-                           glm::value_ptr(value));
+    gl::glUniformMatrix4fv(uniform_location, 1, gl::GL_FALSE, glm::value_ptr(value));
 }
 
 std::string Shader::load_shader_source(const std::string& filename) {

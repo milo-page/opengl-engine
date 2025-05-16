@@ -82,90 +82,90 @@ int main(int argc, char* argv[]) {
     // create the opengl viewport
     glViewport(0, 0, window_width, window_height);
 
-    // depth testin
+    // depth testing
     glEnable(GL_DEPTH_TEST);
 
-    // diamond in center of screen
-    float vertices[] = {
+    // // diamond in center of screen
+    // float vertices[] = {
 
-        0.0f, 1.0f, 0.0f,           1.0f, 0.0f, 0.0f,
-        -1.0, 0.0f, 1.0,            0.0f, 1.0f, 0.0f,
-        1.0f, 0.0f, 1.0f,           0.0f, 0.0f, 1.0f,
-        1.0f, 0.0f, -1.0f,          0.0f, 1.0f, 0.0f,
-        -1.0f, 0.0f, -1.0f,         0.0f, 0.0f, 1.0f,
-        0.0f, -1.0f, 0.0f,          1.0f, 0.0f, 0.0f
+    //     0.0f, 1.0f, 0.0f,           1.0f, 0.0f, 0.0f,
+    //     -1.0, 0.0f, 1.0,            0.0f, 1.0f, 0.0f,
+    //     1.0f, 0.0f, 1.0f,           0.0f, 0.0f, 1.0f,
+    //     1.0f, 0.0f, -1.0f,          0.0f, 1.0f, 0.0f,
+    //     -1.0f, 0.0f, -1.0f,         0.0f, 0.0f, 1.0f,
+    //     0.0f, -1.0f, 0.0f,          1.0f, 0.0f, 0.0f
 
-    };
+    // };
 
-    uint32_t indices[] = {
-        0,1,2,
-        0,2,3,
-        0,3,4,
-        0,4,1,
+    // uint32_t indices[] = {
+    //     0,1,2,
+    //     0,2,3,
+    //     0,3,4,
+    //     0,4,1,
 
-        5,1,2,
-        5,2,3,
-        5,3,4,
-        5,4,1,
-    };
+    //     5,1,2,
+    //     5,2,3,
+    //     5,3,4,
+    //     5,4,1,
+    // };
 
-    float floor = -1.0f;
+    // float floor = -1.0f;
 
-    float floor_vertices[] = {
-        -30.0f, floor, 30.0f,        0.0f, 0.0f, 0.5f,
-        30.0f, floor, 30.0f,         0.5f, 0.0f, 0.0f,
-        30.0f, floor, -30.0f,        0.0f, 0.5f, 0.0f,
-        -30.0f, floor, -30.0f,       0.5f, 0.0f, 0.0f,
-    };
+    // float floor_vertices[] = {
+    //     -30.0f, floor, 30.0f,        0.0f, 0.0f, 0.5f,
+    //     30.0f, floor, 30.0f,         0.5f, 0.0f, 0.0f,
+    //     30.0f, floor, -30.0f,        0.0f, 0.5f, 0.0f,
+    //     -30.0f, floor, -30.0f,       0.5f, 0.0f, 0.0f,
+    // };
 
-    uint32_t floor_indices[] = {
-        0,1,2,
-        2,0,3
-    };
+    // uint32_t floor_indices[] = {
+    //     0,1,2,
+    //     2,0,3
+    // };
 
 
-    // create gpu objects
-    uint32_t VBO, VAO, EBO;
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-    glGenBuffers(1, &EBO);
-    glBindVertexArray(VAO);
+    // // create gpu objects
+    // uint32_t VBO, VAO, EBO;
+    // glGenVertexArrays(1, &VAO);
+    // glGenBuffers(1, &VBO);
+    // glGenBuffers(1, &EBO);
+    // glBindVertexArray(VAO);
     
-    // bind them
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    // // bind them
+    // glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    // glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+    // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    // glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-    // position attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-    // color attribute
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3* sizeof(float)));
-    glEnableVertexAttribArray(1);
+    // // position attribute
+    // glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    // glEnableVertexAttribArray(0);
+    // // color attribute
+    // glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3* sizeof(float)));
+    // glEnableVertexAttribArray(1);
 
-    // floor stuff
-    // create gpu objects
-    uint32_t floor_VBO, floor_VAO, floor_EBO;
-    glGenVertexArrays(1, &floor_VAO);
-    glGenBuffers(1, &floor_VBO);
-    glGenBuffers(1, &floor_EBO);
-    glBindVertexArray(floor_VAO);
+    // // floor stuff
+    // // create gpu objects
+    // uint32_t floor_VBO, floor_VAO, floor_EBO;
+    // glGenVertexArrays(1, &floor_VAO);
+    // glGenBuffers(1, &floor_VBO);
+    // glGenBuffers(1, &floor_EBO);
+    // glBindVertexArray(floor_VAO);
     
-    // bind them
-    glBindBuffer(GL_ARRAY_BUFFER, floor_VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(floor_vertices), floor_vertices, GL_STATIC_DRAW);
+    // // bind them
+    // glBindBuffer(GL_ARRAY_BUFFER, floor_VBO);
+    // glBufferData(GL_ARRAY_BUFFER, sizeof(floor_vertices), floor_vertices, GL_STATIC_DRAW);
 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, floor_EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(floor_indices), floor_indices, GL_STATIC_DRAW);
+    // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, floor_EBO);
+    // glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(floor_indices), floor_indices, GL_STATIC_DRAW);
 
-    // position attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-    // color attribute
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3* sizeof(float)));
-    glEnableVertexAttribArray(1);
+    // // position attribute
+    // glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    // glEnableVertexAttribArray(0);
+    // // color attribute
+    // glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3* sizeof(float)));
+    // glEnableVertexAttribArray(1);
 
     const bool* keyboard_state = SDL_GetKeyboardState(nullptr);
     Clock clock = Clock();
@@ -185,7 +185,7 @@ int main(int argc, char* argv[]) {
     Camera player_camera(player.get_position(), 0.10f, aspect_ratio);
     Shader shader("vertex.vert", "fragment.frag");
 
-    Model shape("../models/shape_2.obj");
+    Model shape("../src/models/shape_2.obj");
 
     // capture mouse
     SDL_SetWindowRelativeMouseMode(window, true);
@@ -320,14 +320,14 @@ int main(int argc, char* argv[]) {
         // glUniform3f(vertex_colour_location, 0.5, glm::sin(current_time) / 2 + 0.5f, 0.5);
 
         // rendering blender thing
-        shader.use();
-        shader.setMat4("model",  model);
-        shader.setMat4("view",   player_camera.get_view_matrix());
-        shader.setMat4("projection",   player_camera.get_projection_matrix());
+        // shader.use();
+        shader.setMat4("model", model);
+        shader.setMat4("view", player_camera.get_view_matrix());
+        shader.setMat4("projection", player_camera.get_projection_matrix());
 
-        shape.draw(shader);
+        // shape.draw(shader);
 
-        // rendering diamond
+        // // rendering diamond
         // glBindVertexArray(VAO);
         // glPolygonMode(GL_FRONT_AND_BACK, current_mode);
         // glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(uint32_t), GL_UNSIGNED_INT, 0);
@@ -344,13 +344,13 @@ int main(int argc, char* argv[]) {
     }
     
     // cleanup
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
-    glDeleteBuffers(1, &EBO);
+    // glDeleteVertexArrays(1, &VAO);
+    // glDeleteBuffers(1, &VBO);
+    // glDeleteBuffers(1, &EBO);
 
-    glDeleteVertexArrays(1, &floor_VAO);
-    glDeleteBuffers(1, &floor_VBO);
-    glDeleteBuffers(1, &floor_EBO);
+    // glDeleteVertexArrays(1, &floor_VAO);
+    // glDeleteBuffers(1, &floor_VBO);
+    // glDeleteBuffers(1, &floor_EBO);
 
     if (gl_context) SDL_GL_DestroyContext(gl_context);
     SDL_Quit();

@@ -1,0 +1,15 @@
+#version 330 core
+
+in vec3 colour;
+in vec3 normal;
+
+out vec4 frag_colour;
+
+uniform vec3 light_direction = vec3(-0.4082, -0.8165, -0.2449);
+
+void main()
+{
+    float diff = max(dot(normalize(normal), -light_direction), 0.15);
+    frag_colour = vec4(colour, 1.0);
+    // frag_colour = vec4(colour.rgb * diff, colour.a);
+}
