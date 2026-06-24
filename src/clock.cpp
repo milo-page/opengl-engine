@@ -14,10 +14,10 @@ void Clock::update_time() {
     }
 }
 
-void Clock::display_fps_title(SDL_Window** window, const std::string* title) {
+void Clock::display_fps_title(SDL_Window **window, const std::string *title) {
 
     if (current_time - last_update_time >= 0.5f) {
-    
+
         std::string new_title = *title + " - FPS: " + std::to_string(static_cast<int>(SDL_round(fps)));
         SDL_SetWindowTitle(*window, new_title.c_str());
 

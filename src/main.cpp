@@ -1,358 +1,370 @@
 // external libraries
 #include <SDL3/SDL.h>
-#include <glbinding/gl/gl.h>
 #include <glbinding/Binding.h>
+#include <glbinding/gl/gl.h>
 #include <glm/glm.hpp>
+#include <glm/gtc/constants.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include <glm/gtc/constants.hpp>
-
 
 // standard libraries
+#include <fstream>
 #include <iostream>
 #include <string>
-#include <fstream>
 
 // custom
-#include <player.hpp>
 #include <camera.hpp>
 #include <clock.hpp>
-#include <utils.hpp>
-#include <shader.hpp>
 #include <model.hpp>
+#include <player.hpp>
+#include <shader.hpp>
+#include <utils.hpp>
 
 using namespace gl;
 
 // set the callback so that it will resize
-void framebuffer_size_callback(SDL_Window* window, int width, int height) {
-    glViewport(0, 0, width, height);
+void framebuffer_size_callback(SDL_Window *window, int width, int height) {
+  glViewport(0, 0, width, height);
 }
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
 
-    // initialize SDL
-    if (SDL_Init(SDL_INIT_VIDEO)) {
-        std::cout << "SDL initialized" << '\n';
+  // initialize SDL
+  if (SDL_Init(SDL_INIT_VIDEO)) {
+    std::cout << "SDL initialized" << '\n';
+  } else {
+    std::cerr << "SDL failed to initialize: " << SDL_GetError() << '\n';
+  }
+
+  // opengl stuff
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+  SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+
+  // window creation
+  SDL_Window *window = nullptr;
+  int window_width = 1000;
+  int window_height = 1000;
+  const std::string title = "OpenGL App";
+
+  window = SDL_CreateWindow(title.c_str(), window_width, window_height,
+                            SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE |
+                                SDL_WINDOW_FULLSCREEN);
+
+  if (!window) {
+    throw std::runtime_error("Window creation failed: " +
+                             std::string(SDL_GetError()));
+  }
+
+  // opengl initialization
+  SDL_GLContext gl_context = SDL_GL_CreateContext(window);
+  if (!gl_context) {
+    throw std::runtime_error("OpenGL context creation failed: " +
+                             std::string(SDL_GetError()));
+  }
+
+  // enable opengl features
+  glbinding::Binding::initialize();
+
+  std::cout << "OpenGL initialized" << '\n';
+  std::cout << "Vendor: " << glGetString(GL_VENDOR) << '\n';
+  std::cout << "Renderer: " << glGetString(GL_RENDERER) << '\n';
+  std::cout << "Version: " << glGetString(GL_VERSION) << '\n';
+
+  SDL_Event event;
+  bool running_flag = true;
+
+  // enable VSync
+  SDL_GL_SetSwapInterval(1);
+
+  // create the opengl viewport
+  glViewport(0, 0, window_width, window_height);
+
+  // depth testing
+  glEnable(GL_DEPTH_TEST);
+
+  // diamond in center of screen
+  float vertices[] = {
+
+      0.0f,  1.0f,  0.0f, 1.0f, 0.0f,  0.0f, -1.0,  0.0f, 1.0,  0.0f,
+      1.0f,  0.0f,  1.0f, 0.0f, 1.0f,  0.0f, 0.0f,  1.0f, 1.0f, 0.0f,
+      -1.0f, 0.0f,  1.0f, 0.0f, -1.0f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f,
+      0.0f,  -1.0f, 0.0f, 1.0f, 0.0f,  0.0f
+
+  };
+
+  uint32_t indices[] = {
+      0, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 1,
+
+      5, 1, 2, 5, 2, 3, 5, 3, 4, 5, 4, 1,
+  };
+
+  float floor = -1.0f;
+
+  float floor_vertices[] = {
+      -30.0f, floor, 30.0f,  0.0f,  0.0f,   0.5f,  30.0f,  floor,
+      30.0f,  0.5f,  0.0f,   0.0f,  30.0f,  floor, -30.0f, 0.0f,
+      0.5f,   0.0f,  -30.0f, floor, -30.0f, 0.5f,  0.0f,   0.0f,
+  };
+
+  uint32_t floor_indices[] = {0, 1, 2, 2, 0, 3};
+
+  // create gpu objects
+  uint32_t VBO, VAO, EBO;
+  glGenVertexArrays(1, &VAO);
+  glGenBuffers(1, &VBO);
+  glGenBuffers(1, &EBO);
+  glBindVertexArray(VAO);
+
+  // bind them
+  glBindBuffer(GL_ARRAY_BUFFER, VBO);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices,
+               GL_STATIC_DRAW);
+
+  // position attribute
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *)0);
+  glEnableVertexAttribArray(0);
+  // color attribute
+  glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float),
+                        (void *)(3 * sizeof(float)));
+  glEnableVertexAttribArray(2);
+
+  // floor stuff
+  // create gpu objects
+  uint32_t floor_VBO, floor_VAO, floor_EBO;
+  glGenVertexArrays(1, &floor_VAO);
+  glGenBuffers(1, &floor_VBO);
+  glGenBuffers(1, &floor_EBO);
+  glBindVertexArray(floor_VAO);
+
+  // bind them
+  glBindBuffer(GL_ARRAY_BUFFER, floor_VBO);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(floor_vertices), floor_vertices,
+               GL_STATIC_DRAW);
+
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, floor_EBO);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(floor_indices), floor_indices,
+               GL_STATIC_DRAW);
+
+  // position attribute
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *)0);
+  glEnableVertexAttribArray(0);
+  // color attribute
+  glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float),
+                        (void *)(3 * sizeof(float)));
+  glEnableVertexAttribArray(1);
+
+  const bool *keyboard_state = SDL_GetKeyboardState(nullptr);
+  Clock clock = Clock();
+  double current_time;
+  int mesh = 0;
+
+  const glm::vec3 gravity = glm::vec3(0.0f, -9.81f, 0.0f);
+  double delta_time = 0.0f;
+  float aspect_ratio = static_cast<float>(window_width / window_height);
+  GLenum current_mode;
+  bool window_transition = false;
+  int mouse_delta_x = 0;
+  int mouse_delta_y = 0;
+
+  // objects
+  Player player(glm::vec3(-10.0f, 2.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+  Camera player_camera(player.get_position(), 0.10f, aspect_ratio);
+  Shader shader("vertex.vert", "fragment.frag");
+
+  //   Model shape("../src/models/shape_2.obj");
+
+  // capture mouse
+  SDL_SetWindowRelativeMouseMode(window, true);
+
+  // use shader program
+  shader.use();
+
+  while (running_flag) {
+
+    // clear the screen
+    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    // timing stuff
+    clock.update_time();
+    clock.display_fps_title(&window, &title);
+    current_time = clock.get_time();
+    delta_time = clock.get_delta_time();
+
+    // mouse stuff
+    mouse_delta_x = 0;
+    mouse_delta_y = 0;
+
+    // events
+    while (SDL_PollEvent(&event)) {
+      switch (event.type) {
+      case SDL_EVENT_QUIT:
+        running_flag = false;
+        break;
+
+      case SDL_EVENT_KEY_DOWN:
+        if (event.key.key == SDLK_ESCAPE) {
+          running_flag = false;
+        } else if (event.key.key == SDLK_M) {
+          mesh = (mesh + 1) % 3;
+        } else if (event.key.key == SDLK_F) {
+          player.set_flying(!player.is_flying());
+        } else if (event.key.key == SDLK_SPACE) {
+          player.jump();
+        }
+        break;
+
+      case SDL_EVENT_WINDOW_RESIZED:
+        window_width = event.window.data1;
+        window_height = event.window.data2;
+        aspect_ratio = static_cast<float>(window_width) /
+                       static_cast<float>(window_height);
+        framebuffer_size_callback(window, window_width, window_height);
+        player_camera.set_aspect_ratio(aspect_ratio);
+        window_transition = true;
+        break;
+
+      case SDL_EVENT_MOUSE_MOTION:
+        mouse_delta_x = event.motion.xrel;
+        mouse_delta_y = event.motion.yrel;
+        break;
+
+      default:
+        break;
+      }
+    }
+
+    switch (mesh) {
+    case 0:
+      current_mode = GL_FILL;
+      break;
+    case 1:
+      current_mode = GL_LINE;
+      break;
+    case 2:
+      current_mode = GL_POINT;
+      break;
+    default:
+      break;
+    }
+    if (!window_transition) {
+      player_camera.process_mouse_movement(delta_time, mouse_delta_x,
+                                           mouse_delta_y);
     } else {
-        std::cerr << "SDL failed to initialize: " << SDL_GetError() << '\n';
+      window_transition = false;
     }
 
-    // opengl stuff
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+    glm::vec3 camera_forward = player_camera.get_forward();
+    glm::vec3 camera_right = player_camera.get_right();
+    glm::vec3 camera_world_up = player_camera.get_world_up();
 
-    // window creation
-    SDL_Window* window = nullptr;
-    int window_width = 1000;
-    int window_height = 1000;
-    const std::string title = "OpenGL App";
+    keyboard_state = SDL_GetKeyboardState(nullptr);
+    glm::vec3 input_direction = glm::vec3(0.0f);
 
-    window = SDL_CreateWindow(
-        title.c_str(),
-        window_width, window_height,
-        SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE //| SDL_WINDOW_FULLSCREEN
-    );
+    glm::vec3 forward =
+        glm::normalize(glm::vec3(camera_forward.x, 0.0f, camera_forward.z));
+    glm::vec3 right =
+        glm::normalize(glm::vec3(camera_right.x, 0.0f, camera_right.z));
 
-    if (!window) {
-        throw std::runtime_error("Window creation failed: " + std::string(SDL_GetError()));
+    if (keyboard_state[SDL_SCANCODE_W])
+      input_direction += forward;
+    if (keyboard_state[SDL_SCANCODE_S])
+      input_direction -= forward;
+    if (keyboard_state[SDL_SCANCODE_D])
+      input_direction += right;
+    if (keyboard_state[SDL_SCANCODE_A])
+      input_direction -= right;
+    if (player.is_flying()) {
+      if (keyboard_state[SDL_SCANCODE_SPACE])
+        input_direction += camera_world_up;
+      if (keyboard_state[SDL_SCANCODE_LCTRL])
+        input_direction -= camera_world_up;
     }
 
-    // opengl initialization
-    SDL_GLContext gl_context = SDL_GL_CreateContext(window);
-    if (!gl_context) {
-        throw std::runtime_error("OpenGL context creation failed: " + std::string(SDL_GetError()));
+    player.set_sprinting(false);
+
+    if (glm::length2(input_direction) > constants::epsilon_squared) {
+      input_direction = glm::normalize(input_direction);
+
+      if (keyboard_state[SDL_SCANCODE_W] &&
+          keyboard_state[SDL_SCANCODE_LSHIFT]) {
+        player.set_sprinting(true);
+      }
     }
 
-    // enable opengl features
-    glbinding::Binding::initialize();
+    // update player and camera
+    player.update_physics(input_direction, gravity, delta_time);
+    player_camera.set_position(player.get_position() +
+                               glm::vec3(0.0f, 1.0f, 0.0f));
 
-    std::cout << "OpenGL initialized" << '\n';
-    std::cout << "Vendor: "   << glGetString(GL_VENDOR)   << '\n';
-    std::cout << "Renderer: " << glGetString(GL_RENDERER) << '\n';
-    std::cout << "Version: "  << glGetString(GL_VERSION)  << '\n';
+    // update model at some point
+    glm::mat4 model = glm::mat4(1.0f);
 
-    SDL_Event event;
-    bool running_flag = true;
+    // passing model matrix to uniform in shaders
+    uint32_t model_uniform_location = glGetUniformLocation(shader.id, "model");
+    glUniformMatrix4fv(model_uniform_location, 1, GL_FALSE,
+                       glm::value_ptr(model));
 
-    // Enable VSync
-    SDL_GL_SetSwapInterval(1);
-    
-    // create the opengl viewport
-    glViewport(0, 0, window_width, window_height);
+    // same for view
+    uint32_t view_uniform_location = glGetUniformLocation(shader.id, "view");
+    glUniformMatrix4fv(view_uniform_location, 1, GL_FALSE,
+                       glm::value_ptr(player_camera.get_view_matrix()));
 
-    // depth testing
-    glEnable(GL_DEPTH_TEST);
+    // same for projection
+    uint32_t projection_uniform_location =
+        glGetUniformLocation(shader.id, "projection");
+    glUniformMatrix4fv(projection_uniform_location, 1, GL_FALSE,
+                       glm::value_ptr(player_camera.get_projection_matrix()));
 
-    // // diamond in center of screen
-    // float vertices[] = {
+    // changing colour a bit
+    int vertex_colour_location =
+        glGetUniformLocation(shader.id, "colour_multiplier");
+    glUniform3f(vertex_colour_location, 0.5, glm::sin(current_time) / 2 + 0.5f,
+                0.5);
 
-    //     0.0f, 1.0f, 0.0f,           1.0f, 0.0f, 0.0f,
-    //     -1.0, 0.0f, 1.0,            0.0f, 1.0f, 0.0f,
-    //     1.0f, 0.0f, 1.0f,           0.0f, 0.0f, 1.0f,
-    //     1.0f, 0.0f, -1.0f,          0.0f, 1.0f, 0.0f,
-    //     -1.0f, 0.0f, -1.0f,         0.0f, 0.0f, 1.0f,
-    //     0.0f, -1.0f, 0.0f,          1.0f, 0.0f, 0.0f
+    // rendering blender thing
+    // shader.use();
+    shader.setMat4("model", model);
+    shader.setMat4("view", player_camera.get_view_matrix());
+    shader.setMat4("projection", player_camera.get_projection_matrix());
 
-    // };
+    // shape.draw(shader);
 
-    // uint32_t indices[] = {
-    //     0,1,2,
-    //     0,2,3,
-    //     0,3,4,
-    //     0,4,1,
+    // rendering diamond
+    glBindVertexArray(VAO);
+    glPolygonMode(GL_FRONT_AND_BACK, current_mode);
+    glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(uint32_t),
+                   GL_UNSIGNED_INT, 0);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    glUniform3f(vertex_colour_location, 0.0f, 0.0f, 0.0f);
+    glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(uint32_t),
+                   GL_UNSIGNED_INT, 0);
 
-    //     5,1,2,
-    //     5,2,3,
-    //     5,3,4,
-    //     5,4,1,
-    // };
+    // rendering floor
+    glPolygonMode(GL_FRONT_AND_BACK, current_mode);
+    glBindVertexArray(floor_VAO);
+    glDrawElements(GL_TRIANGLES, sizeof(floor_indices) / sizeof(uint32_t),
+                   GL_UNSIGNED_INT, 0);
 
-    // float floor = -1.0f;
+    SDL_GL_SwapWindow(window);
+  }
 
-    // float floor_vertices[] = {
-    //     -30.0f, floor, 30.0f,        0.0f, 0.0f, 0.5f,
-    //     30.0f, floor, 30.0f,         0.5f, 0.0f, 0.0f,
-    //     30.0f, floor, -30.0f,        0.0f, 0.5f, 0.0f,
-    //     -30.0f, floor, -30.0f,       0.5f, 0.0f, 0.0f,
-    // };
+  // cleanup
+  glDeleteVertexArrays(1, &VAO);
+  glDeleteBuffers(1, &VBO);
+  glDeleteBuffers(1, &EBO);
 
-    // uint32_t floor_indices[] = {
-    //     0,1,2,
-    //     2,0,3
-    // };
+  glDeleteVertexArrays(1, &floor_VAO);
+  glDeleteBuffers(1, &floor_VBO);
+  glDeleteBuffers(1, &floor_EBO);
 
-
-    // // create gpu objects
-    // uint32_t VBO, VAO, EBO;
-    // glGenVertexArrays(1, &VAO);
-    // glGenBuffers(1, &VBO);
-    // glGenBuffers(1, &EBO);
-    // glBindVertexArray(VAO);
-    
-    // // bind them
-    // glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    // glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    // glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-    // // position attribute
-    // glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
-    // glEnableVertexAttribArray(0);
-    // // color attribute
-    // glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3* sizeof(float)));
-    // glEnableVertexAttribArray(1);
-
-    // // floor stuff
-    // // create gpu objects
-    // uint32_t floor_VBO, floor_VAO, floor_EBO;
-    // glGenVertexArrays(1, &floor_VAO);
-    // glGenBuffers(1, &floor_VBO);
-    // glGenBuffers(1, &floor_EBO);
-    // glBindVertexArray(floor_VAO);
-    
-    // // bind them
-    // glBindBuffer(GL_ARRAY_BUFFER, floor_VBO);
-    // glBufferData(GL_ARRAY_BUFFER, sizeof(floor_vertices), floor_vertices, GL_STATIC_DRAW);
-
-    // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, floor_EBO);
-    // glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(floor_indices), floor_indices, GL_STATIC_DRAW);
-
-    // // position attribute
-    // glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
-    // glEnableVertexAttribArray(0);
-    // // color attribute
-    // glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3* sizeof(float)));
-    // glEnableVertexAttribArray(1);
-
-    const bool* keyboard_state = SDL_GetKeyboardState(nullptr);
-    Clock clock = Clock();
-    double current_time;
-    int mesh = 0;
-
-    const glm::vec3 gravity = glm::vec3(0.0f, -9.81f, 0.0f);
-    double delta_time = 0.0f;
-    float aspect_ratio = static_cast<float>(window_width / window_height);
-    GLenum current_mode;
-    bool window_transition = false;
-    int mouse_delta_x = 0;
-    int mouse_delta_y = 0;
-
-    // objects
-    Player player(glm::vec3(-10.0f, 2.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f));
-    Camera player_camera(player.get_position(), 0.10f, aspect_ratio);
-    Shader shader("vertex.vert", "fragment.frag");
-
-    Model shape("../src/models/shape_2.obj");
-
-    // capture mouse
-    SDL_SetWindowRelativeMouseMode(window, true);
-
-    // use shader program
-    shader.use();
-
-    while (running_flag) {
-
-        // clear the screen
-        glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        
-        // timing stuff
-        clock.update_time();
-        clock.display_fps_title(&window, &title);
-        current_time = clock.get_time();
-        delta_time = clock.get_delta_time();
-
-        // mouse stuff 
-        mouse_delta_x = 0;
-        mouse_delta_y = 0;
-
-        // events
-        while (SDL_PollEvent(&event)) {
-            switch (event.type) {
-                case SDL_EVENT_QUIT:
-                    running_flag = false;
-                    break;
-
-                case SDL_EVENT_KEY_DOWN:
-                    if (event.key.key == SDLK_ESCAPE) {
-                        running_flag = false;
-                    } else if (event.key.key == SDLK_M) {
-                        mesh = (mesh + 1) % 3;
-                    } else if (event.key.key == SDLK_F) {
-                        player.set_flying(!player.is_flying());
-                    } else if (event.key.key == SDLK_SPACE) {
-                        player.jump();
-                    }
-                    break;
-
-                case SDL_EVENT_WINDOW_RESIZED:
-                    window_width = event.window.data1;
-                    window_height = event.window.data2;
-                    aspect_ratio = static_cast<float>(window_width) / static_cast<float>(window_height);
-                    framebuffer_size_callback(window, window_width, window_height);
-                    player_camera.set_aspect_ratio(aspect_ratio);
-                    window_transition = true;
-                    break;
-
-                case SDL_EVENT_MOUSE_MOTION:
-                    mouse_delta_x = event.motion.xrel;
-                    mouse_delta_y = event.motion.yrel;
-                    break;
-
-                default:
-                    break;
-            }
-        }
-
-        switch (mesh) {
-            case 0:
-                current_mode = GL_FILL;
-                break;
-            case 1:
-                current_mode = GL_LINE;
-                break;
-            case 2:
-                current_mode = GL_POINT;
-                break;
-            default:
-                break;
-        }
-        if (!window_transition) {
-            player_camera.process_mouse_movement(delta_time, mouse_delta_x, mouse_delta_y);
-        } else {
-            window_transition = false;
-        }
-
-        glm::vec3 camera_forward = player_camera.get_forward();
-        glm::vec3 camera_right = player_camera.get_right();
-        glm::vec3 camera_world_up = player_camera.get_world_up();
-
-        keyboard_state = SDL_GetKeyboardState(nullptr);
-        glm::vec3 input_direction = glm::vec3(0.0f);
-
-        glm::vec3 forward = glm::normalize(glm::vec3(camera_forward.x, 0.0f, camera_forward.z));
-        glm::vec3 right = glm::normalize(glm::vec3(camera_right.x, 0.0f, camera_right.z));
-
-        if (keyboard_state[SDL_SCANCODE_W]) input_direction += forward;
-        if (keyboard_state[SDL_SCANCODE_S]) input_direction -= forward;
-        if (keyboard_state[SDL_SCANCODE_D]) input_direction += right;
-        if (keyboard_state[SDL_SCANCODE_A]) input_direction -= right;
-        if (player.is_flying()) {
-            if (keyboard_state[SDL_SCANCODE_SPACE]) input_direction += camera_world_up;
-            if (keyboard_state[SDL_SCANCODE_LCTRL]) input_direction -= camera_world_up;
-        }
-
-        player.set_sprinting(false);
-
-        if (glm::length2(input_direction) > constants::epsilon_squared) {
-            input_direction = glm::normalize(input_direction);
-
-            if (keyboard_state[SDL_SCANCODE_W] && keyboard_state[SDL_SCANCODE_LSHIFT]) {
-                player.set_sprinting(true);
-            }
-        }
-
-        // update player and camera
-        player.update_physics(input_direction, gravity, delta_time);
-        player_camera.set_position(player.get_position() + glm::vec3(0.0f, 1.0f, 0.0f));
-
-        // update model at some point
-        glm::mat4 model = glm::mat4(1.0f);
-
-
-        // // passing model matrix to uniform in shaders
-        // uint32_t model_uniform_location = glGetUniformLocation(shader.id, "model");
-        // glUniformMatrix4fv(model_uniform_location, 1, GL_FALSE, glm::value_ptr(model));
-        
-        // // same for view
-        // uint32_t view_uniform_location = glGetUniformLocation(shader.id, "view");
-        // glUniformMatrix4fv(view_uniform_location, 1, GL_FALSE, glm::value_ptr(player_camera.get_view_matrix()));
-
-        // // same for projection
-        // uint32_t projection_uniform_location = glGetUniformLocation(shader.id, "projection");
-        // glUniformMatrix4fv(projection_uniform_location, 1, GL_FALSE, glm::value_ptr(player_camera.get_projection_matrix()));
-
-        // // changing colour a bit
-        // int vertex_colour_location = glGetUniformLocation(shader.id, "colour_multiplier");
-        // glUniform3f(vertex_colour_location, 0.5, glm::sin(current_time) / 2 + 0.5f, 0.5);
-
-        // rendering blender thing
-        // shader.use();
-        shader.setMat4("model", model);
-        shader.setMat4("view", player_camera.get_view_matrix());
-        shader.setMat4("projection", player_camera.get_projection_matrix());
-
-        // shape.draw(shader);
-
-        // // rendering diamond
-        // glBindVertexArray(VAO);
-        // glPolygonMode(GL_FRONT_AND_BACK, current_mode);
-        // glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(uint32_t), GL_UNSIGNED_INT, 0);
-        // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        // glUniform3f(vertex_colour_location, 0.0f, 0.0f, 0.0f);
-        // glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(uint32_t), GL_UNSIGNED_INT, 0);
-
-        // // rendering floor
-        // glPolygonMode(GL_FRONT_AND_BACK, current_mode);
-        // glBindVertexArray(floor_VAO);
-        // glDrawElements(GL_TRIANGLES, sizeof(floor_indices) / sizeof(uint32_t), GL_UNSIGNED_INT, 0);
-
-        SDL_GL_SwapWindow(window);
-    }
-    
-    // cleanup
-    // glDeleteVertexArrays(1, &VAO);
-    // glDeleteBuffers(1, &VBO);
-    // glDeleteBuffers(1, &EBO);
-
-    // glDeleteVertexArrays(1, &floor_VAO);
-    // glDeleteBuffers(1, &floor_VBO);
-    // glDeleteBuffers(1, &floor_EBO);
-
-    if (gl_context) SDL_GL_DestroyContext(gl_context);
-    SDL_Quit();
-    return 0;
+  if (gl_context)
+    SDL_GL_DestroyContext(gl_context);
+  SDL_Quit();
+  return 0;
 }
